@@ -4,25 +4,25 @@ from RoutingSolver import RoutingSolver
 from ResultVisualizer import ResultVisualizer
 
 veh_num = 4
-node_num = 8
+node_num = 10
 human_num = 10
 demand_penalty = 10.0
 time_penalty = 1.0
 flag_solver_type = 0
 
 
-node_pose = np.array( [[ 9.84212669 ,  1.80265101],
- [13.03963515 , 16.09854408],
- [19.30844887 , 10.85317018],
- [14.08816635 ,  8.47962349],
- [11.54766554 ,  1.88200905],
- [18.546858   , 14.70094731],
- [10.         , 10.        ],
- [10.         , 10.        ]])
+# node_pose = np.array( [[ 9.84212669 ,  1.80265101],
+#  [13.03963515 , 16.09854408],
+#  [19.30844887 , 10.85317018],
+#  [14.08816635 ,  8.47962349],
+#  [11.54766554 ,  1.88200905],
+#  [18.546858   , 14.70094731],
+#  [10.         , 10.        ],
+#  [10.         , 10.        ]])
 
-# node_pose = np.random.rand(node_num, 2) * 20.0
-# node_pose[-1, :] = 10.0
-# node_pose[-2, :] = 10.0
+node_pose = np.random.rand(node_num, 2) * 20.0
+node_pose[-1, :] = 10.0
+node_pose[-2, :] = 10.0
 
 print('node_pose = ', node_pose)
 

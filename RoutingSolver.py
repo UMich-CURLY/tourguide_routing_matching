@@ -5,7 +5,7 @@ from gurobipy import GRB
 
 class RoutingSolver:
     def __init__(self, veh_num, node_num, human_num, demand_penalty, time_penalty, flag_solver_type):
-        self.LARGETIME = 1000000.0
+        self.LARGETIME = 1000.0
         self.veh_num = veh_num
         self.node_num = node_num
         self.human_num = human_num
@@ -131,6 +131,13 @@ class RoutingSolver:
                 route.append(next_node)
                 curr_node = next_node
             route_list.append(route)
+
+        # for k in [1]:
+        #     for i in range(self.node_num):
+        #         print(self.x_var[k,i,5].varName, self.x_var[k,i,5].x)
+        #     for i in range(self.node_num):
+        #         print(self.x_var[k,i,2].varName, self.x_var[k,i,2].x)
+
         team_list = []
         for i in range(self.node_num-2):
             team = []
@@ -139,5 +146,11 @@ class RoutingSolver:
                     team.append(k)
             team_list.append(team)
             print(team)
+        
+        time_mat = np.zeros((self.veh_num, self.node_num), dtype=np.float64)
+        for k in range(self.veh_num):
+            for i in range(self.node_num):
+                time_mat[k,i] = self.time_var[k,i].x
+        # print(time_mat)
         return route_list, team_list
 
