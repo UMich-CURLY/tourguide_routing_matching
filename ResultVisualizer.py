@@ -54,7 +54,11 @@ class ResultVisualizer:
             fixed_positions1 = {}
             for i in range(node_num):
                 fixed_positions1[i] = node_pose[i, :] + 0.1 * (k - veh_num/2)
-            arcs = nx.draw_networkx_edges(a_graph, pos=fixed_positions1, edge_color=self.the_color[k%len(self.the_color)])
+            if len(fixed_positions1) == 4:
+                use_color = self.the_color[k%len(self.the_color)]
+            else:
+                use_color = self.the_color[k%len(self.the_color)] + [1]
+            arcs = nx.draw_networkx_edges(a_graph, pos=fixed_positions1, edge_color=use_color)
             if not flag_graph_initialized:
                 flag_graph_initialized = True
                 nx.draw_networkx_nodes(a_graph, pos=fixed_positions, node_color=node_colors, edgecolors='k')
