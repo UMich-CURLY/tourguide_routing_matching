@@ -44,12 +44,12 @@ node_time = np.ones((veh_num,node_num), dtype=np.float64) * 3.0
 routing_solver = OrtoolRoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, flag_solver_type)
 routing_solver.set_model(edge_time, node_time)
 routing_solver.optimize()
-routing_solver.print_solution()
+route_list, team_list = routing_solver.get_plan()
 
 
-# visualizer = ResultVisualizer()
-# visualizer.print_results(route_list, team_list)
-# visualizer.visualize_routes(node_pose, route_list)
+visualizer = ResultVisualizer()
+visualizer.print_results(route_list, team_list)
+visualizer.visualize_routes(node_pose, route_list)
 
 
 

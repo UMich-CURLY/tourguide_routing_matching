@@ -83,29 +83,54 @@ class OrtoolRoutingSolver:
         return dist_out
 
 
-    def print_solution(self):
+    def get_plan(self, flag_verbose = False):
         """Prints solution on console."""
+        route_node_list = []
+        route_time_list = []
+        team_list = [[] for i in range(self.node_num-2)]
+
         solution = self.solution
-        print(f'Objective: {solution.ObjectiveValue()}')
+        if flag_verbose:
+            print(f'Objective: {solution.ObjectiveValue()}')
         time_dimension = self.solver.GetDimensionOrDie('Time')
-        total_time = 0
+        total_max_time = 0
         for vehicle_id in range(self.veh_num):
+            route_node = []
+            route_time = []
             index = self.solver.Start(vehicle_id)
             plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
             while not self.solver.IsEnd(index):
                 time_var = time_dimension.CumulVar(index)
-                plan_output += '{0} Time({1},{2}) -> '.format(
-                    self.manager.IndexToNode(index), solution.Min(time_var),
-                    solution.Max(time_var))
+                node_id = self.manager.IndexToNode(index)
+                temp_min_time = solution.Min(time_var)
+                temp_max_time = solution.Max(time_var)
+                plan_output += '{0} Time({1},{2}) -> '.format(node_id, temp_min_time, temp_max_time)
                 index = solution.Value(self.solver.NextVar(index))
+                route_node.append(node_id)
+                route_time.append(temp_min_time)
+                if node_id != self.start_node:
+                    team_list[node_id].append(vehicle_id)
             time_var = time_dimension.CumulVar(index)
-            plan_output += '{0} Time({1},{2})\n'.format(self.manager.IndexToNode(index),
-                                                        solution.Min(time_var),
-                                                        solution.Max(time_var))
-            plan_output += 'Time of the route: {}min\n'.format(
-                solution.Min(time_var))
-            print(plan_output)
-            total_time += solution.Min(time_var)
-            print('time_var = ', solution.Min(time_var))
-        print('Total time of all routes: {}min'.format(total_time))
+            node_id = self.manager.IndexToNode(index)
+            temp_min_time = solution.Min(time_var)
+            temp_max_time = solution.Max(time_var)
+            plan_output += '{0} Time({1},{2})\n'.format(node_id, temp_min_time, temp_max_time)
+            plan_output += 'Time of the route: {}min\n'.format(temp_min_time)
+            if temp_min_time > total_max_time:
+                total_max_time = temp_min_time
+            route_node.append(node_id)
+            route_time.append(temp_min_time)
+            route_node_list.append(route_node)
+            route_time_list.append(route_time)
+            if flag_verbose:
+                print(plan_output)
+                print('time_var = ', temp_min_time)
+        if flag_verbose:
+            print('Max time of all routes: {}min'.format(total_max_time))
+
+        # print(route_node_list)
+        # print(route_time_list)
+        # print(team_list)
+        return route_node_list, team_list
+
 
