@@ -3,7 +3,7 @@ import gurobipy as gp
 from gurobipy import GRB
 
 
-class RoutingSolver:
+class GurobiRoutingSolver:
     def __init__(self, veh_num, node_num, human_num, demand_penalty, time_penalty, flag_solver_type):
         self.LARGETIME = 1000.0
         self.veh_num = veh_num
@@ -26,7 +26,7 @@ class RoutingSolver:
         result_dict = {}
         result_dict['Status'] = self.solver.getAttr('Status')
         result_dict['Runtime'] = self.solver.getAttr('Runtime')
-        result_dict['IterCount'] = self.solver.getAttr('Status')
+        result_dict['IterCount'] = self.solver.getAttr('IterCount')
         result_dict['NodeCount'] = self.solver.getAttr('NodeCount')
         print('Optimization status: %d' % result_dict['Status'])
         print('Problem solved in %f seconds' % result_dict['Runtime'])
@@ -34,11 +34,11 @@ class RoutingSolver:
         print('Problem solved in %d branch-and-bound nodes' % result_dict['NodeCount'])
         return result_dict
 
-    def set_gurobi_objective(self):
+    def set_objective(self):
         obj = self.time_penalty * self.max_time_var
         self.solver.setObjective(obj, GRB.MINIMIZE)
 
-    def set_gurobi_all_task_complete(self):
+    def set_all_task_complete(self):
         for i in range(self.node_num-2):
             constr = 0
             for k in range(self.veh_num):
@@ -46,9 +46,10 @@ class RoutingSolver:
             constr_name = 'task_complete[' + str(i) + ']'
             self.solver.addConstr(constr >= 1, constr_name)
 
-    def set_gurobi_model(self, edge_time, node_time):
+    def set_model(self, edge_time, node_time):
         '''
-        
+        edge_time: (veh_num, node_num, node_num)
+        node_time: (veh_num, node_num)
         '''
         # Network flow constraints
         for k in range(self.veh_num):
@@ -115,7 +116,7 @@ class RoutingSolver:
         # Energy constraint
         # Placeholder
 
-    def get_gorubi_route(self):
+    def get_plan(self):
         route_list = []
         for k in range(self.veh_num):
             curr_node = self.start_node

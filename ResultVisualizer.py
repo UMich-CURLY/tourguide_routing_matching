@@ -12,7 +12,14 @@ class ResultVisualizer:
                         [0.466000000000000,0.674000000000000,0.188000000000000],
                         [0.301000000000000,0.745000000000000,0.933000000000000],
                         [0.635000000000000,0.0780000000000000,0.184000000000000]]
-    
+        self.plots = []
+
+    def clear_plots(self):
+        self.plots = []
+
+    def show_plots(self):
+        plt.show()
+
     def visualize_routes(self, node_pose, route_list):
         veh_num = len(route_list)
         node_num = node_pose.shape[0]
@@ -46,7 +53,7 @@ class ResultVisualizer:
         # fixed_nodes = fixed_positions.keys()
         # pos = nx.spring_layout(G,pos=fixed_positions, fixed = fixed_nodes)
         flag_graph_initialized = False
-        plt.figure()
+        temp_plot = plt.figure()
         for k in range(veh_num):
             a_graph = graph_list[k]
             if a_graph is None:
@@ -64,7 +71,7 @@ class ResultVisualizer:
                 nx.draw_networkx_nodes(a_graph, pos=fixed_positions, node_color=node_colors, edgecolors='k')
                 nx.draw_networkx_labels(a_graph, pos=fixed_positions, labels=node_labels)
         # nx.draw_networkx(G, node_color=colours)
-        plt.show()
+        self.plots.append(temp_plot)
         
     def print_results(self, route_list, team_list):
         print('Routes:')
