@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.spatial.distance import squareform, pdist
 from RoutingSolver import RoutingSolver
+from OrtoolRoutingSolver import OrtoolRoutingSolver
 from ResultVisualizer import ResultVisualizer
 
 veh_num = 4
@@ -32,16 +33,23 @@ veh_speed = np.ones(veh_num, dtype=np.float64)
 edge_time = edge_dist.reshape(1,node_num,node_num) / veh_speed.reshape(veh_num,1,1)
 node_time = np.ones((veh_num,node_num), dtype=np.float64) * 3.0
 
-routing_solver = RoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, flag_solver_type)
-routing_solver.set_gurobi_model(edge_time, node_time)
-routing_solver.set_gurobi_all_task_complete()
-routing_solver.set_gurobi_objective()
-routing_solver.optimize()
-route_list, team_list = routing_solver.get_gorubi_route()
+# routing_solver = RoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, flag_solver_type)
+# routing_solver.set_gurobi_model(edge_time, node_time)
+# routing_solver.set_gurobi_all_task_complete()
+# routing_solver.set_gurobi_objective()
+# routing_solver.optimize()
+# route_list, team_list = routing_solver.get_gorubi_route()
 
-visualizer = ResultVisualizer()
-visualizer.print_results(route_list, team_list)
-visualizer.visualize_routes(node_pose, route_list)
+
+routing_solver = OrtoolRoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, flag_solver_type)
+routing_solver.set_model(edge_time, node_time)
+routing_solver.optimize()
+routing_solver.print_solution()
+
+
+# visualizer = ResultVisualizer()
+# visualizer.print_results(route_list, team_list)
+# visualizer.visualize_routes(node_pose, route_list)
 
 
 
