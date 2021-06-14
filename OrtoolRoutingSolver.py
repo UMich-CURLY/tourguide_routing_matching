@@ -15,13 +15,13 @@ class OrtoolRoutingSolver:
         self.global_penalty = 100.0
 
         # Create Routing Model.
-        self.manager = pywrapcp.RoutingIndexManager(self.node_num, self.veh_num, self.start_node)
+        self.manager = pywrapcp.RoutingIndexManager(self.node_num-1, self.veh_num, self.start_node)
         self.solver = pywrapcp.RoutingModel(self.manager)
         self.solution = None
 
     def set_model(self, edge_time, node_time):
         distance_matrix = edge_time[0, :self.node_num-1, :self.node_num-1]
-        # distance_matrix += node_time[0, :self.node_num-1].reshape(self.node_num-1, 1)
+        distance_matrix += node_time[0, :self.node_num-1].reshape(self.node_num-1, 1)
 
         self.data = {}
         self.data['edge_time'] = edge_time
@@ -45,7 +45,7 @@ class OrtoolRoutingSolver:
             dimension_name)
         distance_dimension = self.solver.GetDimensionOrDie(dimension_name)
         temp_penalty = int(self.global_penalty * self.time_penalty)
-        distance_dimension.SetGlobalSpanCostCoefficient(1000)
+        distance_dimension.SetGlobalSpanCostCoefficient(temp_penalty)
     
     def optimize(self):
         # Setting first solution heuristic.
