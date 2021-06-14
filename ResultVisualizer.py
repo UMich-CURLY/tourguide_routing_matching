@@ -54,7 +54,7 @@ class ResultVisualizer:
             fixed_positions1 = {}
             for i in range(node_num):
                 fixed_positions1[i] = node_pose[i, :] + 0.1 * (k - veh_num/2)
-            if len(fixed_positions1) == 4:
+            if len(route_list[k])-1 == 4:
                 use_color = self.the_color[k%len(self.the_color)]
             else:
                 use_color = self.the_color[k%len(self.the_color)] + [1]
@@ -66,5 +66,12 @@ class ResultVisualizer:
         # nx.draw_networkx(G, node_color=colours)
         plt.show()
         
+    def print_results(self, route_list, team_list):
+        print('Routes:')
+        for k in range(len(route_list)):
+            print(k, route_list[k])
+        print('\nTeams:')
+        for i in range(len(team_list)):
+            print(i, team_list[i])
 
 

@@ -131,7 +131,13 @@ class RoutingSolver:
                 route.append(next_node)
                 curr_node = next_node
             route_list.append(route)
-            print(route)
-        return route_list
-
+        team_list = []
+        for i in range(self.node_num-2):
+            team = []
+            for k in range(self.veh_num):
+                if self.y_var[k,i].x > 0.5:
+                    team.append(k)
+            team_list.append(team)
+            print(team)
+        return route_list, team_list
 
