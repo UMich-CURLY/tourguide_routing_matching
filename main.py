@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.spatial.distance import squareform, pdist
 from RoutingSolver import RoutingSolver
+from ResultVisualizer import ResultVisualizer
 
 veh_num = 4
 node_num = 8
@@ -25,4 +26,8 @@ routing_solver.set_gurobi_model(edge_time, node_time)
 routing_solver.set_gurobi_all_task_complete()
 routing_solver.set_gurobi_objective()
 routing_solver.optimize()
-routing_solver.get_gorubi_route()
+route_list = routing_solver.get_gorubi_route()
+
+visualizer = ResultVisualizer()
+visualizer.visualize_routes(node_pose, route_list)
+

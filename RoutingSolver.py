@@ -132,5 +132,6 @@ class RoutingSolver:
                 curr_node = next_node
             route_list.append(route)
             print(route)
+        return route_list
 
 
