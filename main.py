@@ -22,20 +22,20 @@ flag_solver_type = 0
 #  [10.         , 10.        ],
 #  [10.         , 10.        ]])
 
-node_pose = np.array( [[ 17.87230637 , 35.1245531 ],
- [ 84.76256192 ,198.77716023],
- [151.94962027 , 78.23502452],
- [ 25.62683298 ,154.40066714],
- [ 43.72012928 ,161.59792387],
- [189.77192707 ,169.84716883],
- [194.84484267 ,173.51820618],
- [160.98953757 , 58.55608649],
- [100.         ,100.        ],
- [100.         ,100.        ]])
+# node_pose = np.array( [[ 17.87230637 , 35.1245531 ],
+#  [ 84.76256192 ,198.77716023],
+#  [151.94962027 , 78.23502452],
+#  [ 25.62683298 ,154.40066714],
+#  [ 43.72012928 ,161.59792387],
+#  [189.77192707 ,169.84716883],
+#  [194.84484267 ,173.51820618],
+#  [160.98953757 , 58.55608649],
+#  [100.         ,100.        ],
+#  [100.         ,100.        ]])
 
-# node_pose = np.random.rand(node_num, 2) * 200.0
-# node_pose[-1, :] = 100.0
-# node_pose[-2, :] = 100.0
+node_pose = np.random.rand(node_num, 2) * 200.0
+node_pose[-1, :] = 100.0
+node_pose[-2, :] = 100.0
 
 print('node_pose = ', node_pose)
 
@@ -43,7 +43,7 @@ edge_dist = squareform(pdist(node_pose))
 veh_speed = np.ones(veh_num, dtype=np.float64)
 
 edge_time = edge_dist.reshape(1,node_num,node_num) / veh_speed.reshape(veh_num,1,1)
-node_time = np.ones((veh_num,node_num), dtype=np.float64) * 3.0
+node_time = np.ones((veh_num,node_num), dtype=np.float64) * 30.0
 
 # print(edge_time, node_time)
 
