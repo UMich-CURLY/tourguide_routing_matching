@@ -48,8 +48,9 @@ class OrtoolRoutingSolver:
         for k in range(self.veh_num):
             for i in range(place_num):
                 penalty_mat[k, i] = (z_sol[:, k] * human_demand_bool[:, i]).sum()
+        # print('penalty_mat = ', penalty_mat)
         for k in range(self.veh_num):
-            def temp_distance_callback(self, from_index, to_index):
+            def temp_distance_callback(from_index, to_index):
                 """Returns the distance between the two nodes."""
                 # Convert from routing variable Index to distance matrix NodeIndex.
                 from_node = self.manager.IndexToNode(from_index)

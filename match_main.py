@@ -8,7 +8,7 @@ from OrtoolHumanMatcher import OrtoolHumanMatcher
 
 veh_num = 4
 node_num = 10
-demand_penalty = 10.0
+demand_penalty = 1000.0
 time_penalty = 1.0
 flag_solver_type = 0
 
