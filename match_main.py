@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.spatial.distance import squareform, pdist
 from GurobiRoutingSolver import GurobiRoutingSolver
 from OrtoolRoutingSolver import OrtoolRoutingSolver
@@ -8,6 +9,7 @@ from OrtoolHumanMatcher import OrtoolHumanMatcher
 
 flag_verbose = False
 flag_show_plot = True
+folder_name = './temp/'
 
 veh_num = 4
 node_num = 10
@@ -89,8 +91,36 @@ for i_iter in range(max_iter):
     demand_obj_list[2*i_iter+1] = demand_obj
     result_max_time_list[2*i_iter+1] = result_max_time
 
+print('totam_demand = ', human_demand_bool.sum())
+
 visualizer.print_results(route_list, route_time_list, team_list)
 if flag_show_plot:
     visualizer.visualize_routes(node_pose, route_list)
-    visualizer.show_plots()
+    # visualizer.show_plots()
+    visualizer.save_plots(folder_name)
 
+    iter_range = np.arange(2*max_iter)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(iter_range, sum_obj_list)
+    ax.set_xlabel('Iteration')
+    ax.set_ylabel('Objective function')
+    fig_file = folder_name + "objective.png"
+    fig.savefig(fig_file, bbox_inches='tight')
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(iter_range, demand_obj_list)
+    ax.set_xlabel('Iteration')
+    ax.set_ylabel('Dropped demand')
+    fig_file = folder_name + "demand.png"
+    fig.savefig(fig_file, bbox_inches='tight')
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(iter_range, result_max_time_list / 10)
+    ax.set_xlabel('Iteration')
+    ax.set_ylabel('Max tour time (min)')
+    fig_file = folder_name + "maxtime.png"
+    fig.savefig(fig_file, bbox_inches='tight')
