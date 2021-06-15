@@ -32,7 +32,7 @@ class OrtoolRoutingSolver:
             self.sub_solver.append(a_sub_solver)
             self.sub_solution.append(None)
 
-    def set_sub_model(self, edge_time, node_time, z_sol, human_demand_bool):
+    def optimize_sub(self, edge_time, node_time, z_sol, human_demand_bool):
         '''
         z_sol:             (human_num, veh_num)
         human_demand_bool: (human_num, place_num), i.e. (human_num, node_num - 2)
@@ -168,35 +168,44 @@ class OrtoolRoutingSolver:
         return dist_out
 
 
-    def get_plan(self, flag_verbose = False):
+    def get_plan(self, flag_sub_solver = False, flag_verbose = False):
         """Prints solution on console."""
         route_node_list = []
         route_time_list = []
         team_list = [[] for i in range(self.node_num-2)]
 
         solution = self.solution
+        solver = self.solver
+        manager = self.manager
+        time_dimension = solver.GetDimensionOrDie('Time')
         if flag_verbose:
             print(f'Objective: {solution.ObjectiveValue()}')
-        time_dimension = self.solver.GetDimensionOrDie('Time')
         total_max_time = 0
         for vehicle_id in range(self.veh_num):
             route_node = []
             route_time = []
-            index = self.solver.Start(vehicle_id)
+            if flag_sub_solver:
+                solution = self.sub_solution[vehicle_id]
+                solver = self.sub_solver[vehicle_id]
+                manager = self.sub_manager[vehicle_id]
+                index = solver.Start(0)
+                time_dimension = solver.GetDimensionOrDie('Time')
+            else:
+                index = solver.Start(vehicle_id)
             plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
-            while not self.solver.IsEnd(index):
+            while not solver.IsEnd(index):
                 time_var = time_dimension.CumulVar(index)
-                node_id = self.manager.IndexToNode(index)
+                node_id = manager.IndexToNode(index)
                 temp_min_time = solution.Min(time_var)
                 temp_max_time = solution.Max(time_var)
                 plan_output += '{0} Time({1},{2}) -> '.format(node_id, temp_min_time, temp_max_time)
-                index = solution.Value(self.solver.NextVar(index))
+                index = solution.Value(solver.NextVar(index))
                 route_node.append(node_id)
                 route_time.append(temp_min_time)
-                if node_id != self.start_node:
+                if node_id < self.start_node:
                     team_list[node_id].append(vehicle_id)
             time_var = time_dimension.CumulVar(index)
-            node_id = self.manager.IndexToNode(index)
+            node_id = manager.IndexToNode(index)
             temp_min_time = solution.Min(time_var)
             temp_max_time = solution.Max(time_var)
             plan_output += '{0} Time({1},{2})\n'.format(node_id, temp_min_time, temp_max_time)
@@ -207,6 +216,7 @@ class OrtoolRoutingSolver:
             route_time.append(temp_min_time)
             route_node_list.append(route_node)
             route_time_list.append(route_time)
+
             if flag_verbose:
                 print(plan_output)
                 print('time_var = ', temp_min_time)
