@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.lib.function_base import place
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 import time
@@ -9,7 +10,7 @@ class OrtoolRoutingSolver:
         self.veh_num = veh_num
         self.node_num = node_num
         self.human_num = human_num
-        # self.demand_penalty = demand_penalty
+        self.demand_penalty = demand_penalty
         self.time_penalty = time_penalty
 
         self.start_node = self.node_num - 2
@@ -19,6 +20,88 @@ class OrtoolRoutingSolver:
         self.manager = pywrapcp.RoutingIndexManager(self.node_num-1, self.veh_num, self.start_node)
         self.solver = pywrapcp.RoutingModel(self.manager)
         self.solution = None
+
+        # Create sub-routing model
+        self.sub_manager = []
+        self.sub_solver = []
+        self.sub_solution = []
+        for i in range(veh_num):
+            a_sub_manager = pywrapcp.RoutingIndexManager(self.node_num-1, 1, self.start_node)
+            a_sub_solver = pywrapcp.RoutingModel(a_sub_manager)
+            self.sub_manager.append(a_sub_manager)
+            self.sub_solver.append(a_sub_solver)
+            self.sub_solution.append(None)
+
+    def set_sub_model(self, edge_time, node_time, z_sol, human_demand_bool):
+        '''
+        z_sol:             (human_num, veh_num)
+        human_demand_bool: (human_num, place_num), i.e. (human_num, node_num - 2)
+        '''
+        place_num = self.node_num-2
+        penalty_mat = np.zeros((self.veh_num, place_num), dtype=np.float64)
+
+        result_dict = {}
+        result_dict['Optimized'] = True
+        result_dict['Status'] = []
+        start_time = time.time()
+
+        for k in range(self.veh_num):
+            for i in range(place_num):
+                penalty_mat[k, i] = (z_sol[:, k] * human_demand_bool[:, i]).sum()
+        for k in range(self.veh_num):
+            def temp_distance_callback(self, from_index, to_index):
+                """Returns the distance between the two nodes."""
+                # Convert from routing variable Index to distance matrix NodeIndex.
+                from_node = self.manager.IndexToNode(from_index)
+                to_node = self.manager.IndexToNode(to_index)
+                if from_node == to_node:
+                    dist_out = 0.0
+                else:
+                    dist_out = edge_time[k,from_node,to_node] + node_time[k,from_node]
+                return dist_out
+
+            transit_callback_index = self.sub_solver[k].RegisterTransitCallback(temp_distance_callback)
+
+            # Define cost of each arc.
+            self.sub_solver[k].SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+
+            # Add Distance constraint.
+            dimension_name = 'Time'
+            self.sub_solver[k].AddDimension(
+                transit_callback_index,
+                0,  # no slack
+                3000,  # vehicle maximum travel distance
+                True,  # start cumul to zero
+                dimension_name)
+            distance_dimension = self.sub_solver[k].GetDimensionOrDie(dimension_name)
+            temp_penalty = int(self.global_penalty * self.time_penalty)
+            distance_dimension.SetGlobalSpanCostCoefficient(temp_penalty)
+
+            # Allow to drop nodes.
+            for i in range(place_num):
+                temp_penalty = int(penalty_mat[k, i] * self.demand_penalty * self.global_penalty)
+                self.sub_solver[k].AddDisjunction([self.sub_manager[k].NodeToIndex(i)], temp_penalty)
+
+            search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+            search_parameters.first_solution_strategy = (routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+            # Solve the problem.
+            a_sub_solution = self.sub_solver[k].SolveWithParameters(search_parameters)
+
+            result_dict['Status'].append(self.sub_solver[k].status())
+            if self.sub_solver[k].status() != 1:
+                result_dict['Optimized'] = False
+                continue
+            self.sub_solution[k] = a_sub_solution
+
+        end_time = time.time()
+        result_dict['Runtime'] = end_time - start_time
+
+        # result_dict['IterCount'] = self.solver.iterations()
+        # result_dict['NodeCount'] = self.solver.nodes()
+        print('Solution found: %d' % result_dict['Optimized'])
+        print('Optimization status:', result_dict['Status'])
+        print('Problem solved in %f seconds' % result_dict['Runtime'])
+        return result_dict
 
     def set_model(self, edge_time, node_time):
         distance_matrix = edge_time[0, :self.node_num-1, :self.node_num-1] + 0

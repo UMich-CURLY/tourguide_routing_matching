@@ -50,18 +50,22 @@ routing_solver.set_model(edge_time, node_time)
 routing_solver.optimize()
 route_list, route_time_list, team_list, y_sol = routing_solver.get_plan()
 
-matcher = OrtoolHumanMatcher(human_num, veh_num, max_human_in_team)
-human_in_team, z_sol, demand_result = matcher.optimize(human_demand_bool, y_sol)
-print('human_in_team', human_in_team)
-print('z_sol', z_sol)
-print('demand_result = ', demand_result)
-
-
 visualizer.print_results(route_list, route_time_list, team_list)
 visualizer.visualize_routes(node_pose, route_list)
 result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, team_list)
 print('result_max_time = ', result_max_time)
 print('node_visit = ', node_visit)
 
-visualizer.show_plots()
+human_matcher = OrtoolHumanMatcher(human_num, veh_num, max_human_in_team)
+human_in_team, z_sol, demand_result = human_matcher.optimize(human_demand_bool, y_sol)
+print('human_in_team', human_in_team)
+print('z_sol', z_sol)
+print('demand_result = ', demand_result)
+
+
+result_dict = routing_solver.set_sub_model(edge_time, node_time, z_sol, human_demand_bool)
+
+
+
+# visualizer.show_plots()
 
