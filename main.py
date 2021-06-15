@@ -10,7 +10,7 @@ node_num = 10
 human_num = 10
 demand_penalty = 10.0
 time_penalty = 1.0
-flag_solver_type = 0
+time_limit = 0
 
 
 # node_pose = np.array( [[ 9.84212669 ,  1.80265101],
@@ -50,7 +50,7 @@ node_time = np.ones((veh_num,node_num), dtype=np.float64) * 30.0
 visualizer = ResultVisualizer()
 evaluator = ResultEvaluator(veh_num, node_num, human_num, demand_penalty, time_penalty)
 
-routing_solver = GurobiRoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, flag_solver_type)
+routing_solver = GurobiRoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, time_limit)
 routing_solver.set_model(edge_time, node_time)
 routing_solver.set_all_task_complete()
 routing_solver.set_objective()
@@ -62,7 +62,7 @@ sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_
 print('result_max_time = ', result_max_time)
 print('node_visit = ', node_visit)
 
-routing_solver = OrtoolRoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, flag_solver_type)
+routing_solver = OrtoolRoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, time_limit)
 routing_solver.set_model(edge_time, node_time)
 routing_solver.optimize()
 route_list, route_time_list, team_list, y_sol = routing_solver.get_plan()

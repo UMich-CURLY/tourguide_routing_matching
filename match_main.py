@@ -6,11 +6,13 @@ from ResultVisualizer import ResultVisualizer
 from ResultEvaluator import ResultEvaluator
 from OrtoolHumanMatcher import OrtoolHumanMatcher
 
+flag_verbose = False
+
 veh_num = 4
 node_num = 10
 demand_penalty = 1000.0
 time_penalty = 1.0
-flag_solver_type = 0
+time_limit = 500
 
 human_num = 10
 human_choice = 5
@@ -44,8 +46,7 @@ print('human_demand_int_unique = \n', human_demand_int_unique)
 visualizer = ResultVisualizer()
 evaluator = ResultEvaluator(veh_num, node_num, human_num, demand_penalty, time_penalty)
 
-
-routing_solver = OrtoolRoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, flag_solver_type)
+routing_solver = OrtoolRoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, time_limit)
 routing_solver.set_model(edge_time, node_time)
 routing_solver.optimize()
 route_list, route_time_list, team_list, y_sol = routing_solver.get_plan()

@@ -5,13 +5,17 @@ from ortools.constraint_solver import pywrapcp
 import time
 
 class OrtoolRoutingSolver:
-    def __init__(self, veh_num, node_num, human_num, demand_penalty, time_penalty, flag_solver_type):
+    def __init__(self, veh_num, node_num, human_num, demand_penalty, time_penalty, time_limit):
         self.LARGETIME = 1000.0
         self.veh_num = veh_num
         self.node_num = node_num
         self.human_num = human_num
         self.demand_penalty = demand_penalty
         self.time_penalty = time_penalty
+        if time_limit <= 1:
+            self.time_limit = 3000
+        else:
+            self.time_limit = int(time_limit)
 
         self.start_node = self.node_num - 2
         self.global_penalty = 1000.0
@@ -71,7 +75,7 @@ class OrtoolRoutingSolver:
             self.sub_solver[k].AddDimension(
                 transit_callback_index,
                 0,  # no slack
-                3000,  # vehicle maximum travel distance
+                self.time_limit,  # vehicle maximum travel distance
                 True,  # start cumul to zero
                 dimension_name)
             distance_dimension = self.sub_solver[k].GetDimensionOrDie(dimension_name)
@@ -125,7 +129,7 @@ class OrtoolRoutingSolver:
         self.solver.AddDimension(
             transit_callback_index,
             0,  # no slack
-            3000,  # vehicle maximum travel distance
+            self.time_limit,  # vehicle maximum travel distance
             True,  # start cumul to zero
             dimension_name)
         distance_dimension = self.solver.GetDimensionOrDie(dimension_name)
