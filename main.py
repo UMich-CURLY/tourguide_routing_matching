@@ -58,7 +58,7 @@ routing_solver.optimize()
 route_list, route_time_list, team_list, y_sol = routing_solver.get_plan()
 visualizer.print_results(route_list, route_time_list, team_list)
 visualizer.visualize_routes(node_pose, route_list)
-result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, team_list)
+sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, None, y_sol, None)
 print('result_max_time = ', result_max_time)
 print('node_visit = ', node_visit)
 
@@ -69,7 +69,7 @@ route_list, route_time_list, team_list, y_sol = routing_solver.get_plan()
 
 visualizer.print_results(route_list, route_time_list, team_list)
 visualizer.visualize_routes(node_pose, route_list)
-result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, team_list)
+sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, None, y_sol, None)
 print('result_max_time = ', result_max_time)
 print('node_visit = ', node_visit)
 

@@ -50,10 +50,11 @@ routing_solver.set_model(edge_time, node_time)
 routing_solver.optimize()
 route_list, route_time_list, team_list, y_sol = routing_solver.get_plan()
 
+z_sol = None
 visualizer.print_results(route_list, route_time_list, team_list)
 visualizer.visualize_routes(node_pose, route_list)
-result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, team_list)
-print('result_max_time = ', result_max_time)
+sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
+print('sum_obj = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (demand_penalty, demand_obj, time_penalty, result_max_time, sum_obj))
 print('node_visit = ', node_visit)
 
 human_matcher = OrtoolHumanMatcher(human_num, veh_num, max_human_in_team)
@@ -62,16 +63,18 @@ print('human_in_team', human_in_team)
 print('z_sol', z_sol)
 print('demand_result = ', demand_result)
 
+sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
+print('sum_obj = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (demand_penalty, demand_obj, time_penalty, result_max_time, sum_obj))
+# print('node_visit = ', node_visit)
+
 
 result_dict = routing_solver.optimize_sub(edge_time, node_time, z_sol, human_demand_bool)
-print('haha1')
 route_list, route_time_list, team_list, y_sol = routing_solver.get_plan(flag_sub_solver=True)
-print('haha2')
 
 visualizer.print_results(route_list, route_time_list, team_list)
 visualizer.visualize_routes(node_pose, route_list)
-result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, team_list)
-print('result_max_time = ', result_max_time)
+sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
+print('sum_obj = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (demand_penalty, demand_obj, time_penalty, result_max_time, sum_obj))
 print('node_visit = ', node_visit)
 
 
