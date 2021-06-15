@@ -117,10 +117,17 @@ class GurobiRoutingSolver:
         # Placeholder
 
     def get_plan(self):
-        route_list = []
+        time_mat = np.zeros((self.veh_num, self.node_num), dtype=np.float64)
+        for k in range(self.veh_num):
+            for i in range(self.node_num):
+                time_mat[k,i] = self.time_var[k,i].x
+
+        route_node_list = []
+        route_time_list = []
         for k in range(self.veh_num):
             curr_node = self.start_node
-            route = [curr_node]
+            route_node = [curr_node]
+            route_time = [time_mat[k,curr_node]]
             for ii in range(100):
                 next_node = -1
                 for i in range(self.node_num):
@@ -129,9 +136,11 @@ class GurobiRoutingSolver:
                         break
                 if next_node == -1:
                     break
-                route.append(next_node)
+                route_node.append(next_node)
+                route_time.append(time_mat[k,next_node])
                 curr_node = next_node
-            route_list.append(route)
+            route_node_list.append(route_node)
+            route_time_list.append(route_time)
 
         # for k in [1]:
         #     for i in range(self.node_num):
@@ -148,10 +157,6 @@ class GurobiRoutingSolver:
             team_list.append(team)
             print(team)
         
-        time_mat = np.zeros((self.veh_num, self.node_num), dtype=np.float64)
-        for k in range(self.veh_num):
-            for i in range(self.node_num):
-                time_mat[k,i] = self.time_var[k,i].x
         # print(time_mat)
-        return route_list, team_list
+        return route_node_list, route_time_list, team_list
 

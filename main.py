@@ -3,6 +3,7 @@ from scipy.spatial.distance import squareform, pdist
 from GurobiRoutingSolver import GurobiRoutingSolver
 from OrtoolRoutingSolver import OrtoolRoutingSolver
 from ResultVisualizer import ResultVisualizer
+from ResultEvaluator import ResultEvaluator
 
 veh_num = 4
 node_num = 10
@@ -21,9 +22,20 @@ flag_solver_type = 0
 #  [10.         , 10.        ],
 #  [10.         , 10.        ]])
 
-node_pose = np.random.rand(node_num, 2) * 20.0
-node_pose[-1, :] = 10.0
-node_pose[-2, :] = 10.0
+node_pose = np.array( [[ 17.87230637 , 35.1245531 ],
+ [ 84.76256192 ,198.77716023],
+ [151.94962027 , 78.23502452],
+ [ 25.62683298 ,154.40066714],
+ [ 43.72012928 ,161.59792387],
+ [189.77192707 ,169.84716883],
+ [194.84484267 ,173.51820618],
+ [160.98953757 , 58.55608649],
+ [100.         ,100.        ],
+ [100.         ,100.        ]])
+
+# node_pose = np.random.rand(node_num, 2) * 200.0
+# node_pose[-1, :] = 100.0
+# node_pose[-2, :] = 100.0
 
 print('node_pose = ', node_pose)
 
@@ -33,25 +45,33 @@ veh_speed = np.ones(veh_num, dtype=np.float64)
 edge_time = edge_dist.reshape(1,node_num,node_num) / veh_speed.reshape(veh_num,1,1)
 node_time = np.ones((veh_num,node_num), dtype=np.float64) * 3.0
 
+# print(edge_time, node_time)
+
 visualizer = ResultVisualizer()
+evaluator = ResultEvaluator(veh_num, node_num, human_num, demand_penalty, time_penalty)
 
 routing_solver = GurobiRoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, flag_solver_type)
 routing_solver.set_model(edge_time, node_time)
 routing_solver.set_all_task_complete()
 routing_solver.set_objective()
 routing_solver.optimize()
-route_list, team_list = routing_solver.get_plan()
-visualizer.print_results(route_list, team_list)
-# visualizer.visualize_routes(node_pose, route_list)
-
+route_list, route_time_list, team_list = routing_solver.get_plan()
+visualizer.print_results(route_list, route_time_list, team_list)
+visualizer.visualize_routes(node_pose, route_list)
+result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, team_list)
+print('result_max_time = ', result_max_time)
+print('node_visit = ', node_visit)
 
 routing_solver = OrtoolRoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, flag_solver_type)
 routing_solver.set_model(edge_time, node_time)
 routing_solver.optimize()
-route_list, team_list = routing_solver.get_plan()
+route_list, route_time_list, team_list = routing_solver.get_plan()
 
-visualizer.print_results(route_list, team_list)
+visualizer.print_results(route_list, route_time_list, team_list)
 visualizer.visualize_routes(node_pose, route_list)
+result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, team_list)
+print('result_max_time = ', result_max_time)
+print('node_visit = ', node_visit)
 
 visualizer.show_plots()
 

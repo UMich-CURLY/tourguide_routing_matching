@@ -12,7 +12,7 @@ class OrtoolRoutingSolver:
         self.time_penalty = time_penalty
 
         self.start_node = self.node_num - 2
-        self.global_penalty = 100.0
+        self.global_penalty = 1000.0
 
         # Create Routing Model.
         self.manager = pywrapcp.RoutingIndexManager(self.node_num-1, self.veh_num, self.start_node)
@@ -20,7 +20,7 @@ class OrtoolRoutingSolver:
         self.solution = None
 
     def set_model(self, edge_time, node_time):
-        distance_matrix = edge_time[0, :self.node_num-1, :self.node_num-1]
+        distance_matrix = edge_time[0, :self.node_num-1, :self.node_num-1] + 0
         distance_matrix += node_time[0, :self.node_num-1].reshape(self.node_num-1, 1)
 
         self.data = {}
@@ -78,7 +78,8 @@ class OrtoolRoutingSolver:
         if from_node == to_node:
             dist_out = 0.0
         else:
-            dist_out = self.data['distance_matrix'][from_node][to_node]
+            # dist_out = self.data['distance_matrix'][from_node][to_node]
+            dist_out = self.data['edge_time'][0,from_node,to_node] + self.data['node_time'][0,from_node]
         # print('dist_out = ', dist_out)
         return dist_out
 
@@ -131,6 +132,6 @@ class OrtoolRoutingSolver:
         # print(route_node_list)
         # print(route_time_list)
         # print(team_list)
-        return route_node_list, team_list
+        return route_node_list, route_time_list, team_list
 
 

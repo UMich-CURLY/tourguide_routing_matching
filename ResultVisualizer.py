@@ -73,10 +73,10 @@ class ResultVisualizer:
         # nx.draw_networkx(G, node_color=colours)
         self.plots.append(temp_plot)
         
-    def print_results(self, route_list, team_list):
+    def print_results(self, route_list, route_time_list, team_list):
         print('Routes:')
         for k in range(len(route_list)):
-            print(k, route_list[k])
+            print(k, route_list[k], route_time_list[k])
         print('\nTeams:')
         for i in range(len(team_list)):
             print(i, team_list[i])
