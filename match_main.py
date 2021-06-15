@@ -7,6 +7,7 @@ from ResultEvaluator import ResultEvaluator
 from OrtoolHumanMatcher import OrtoolHumanMatcher
 
 flag_verbose = False
+flag_show_plot = True
 
 veh_num = 4
 node_num = 10
@@ -16,6 +17,8 @@ time_limit = 500
 
 human_num = 10
 human_choice = 5
+
+max_iter = 10
 
 max_human_in_team = np.ones(veh_num, dtype=int) * (human_num // veh_num + 1)
 place_num = node_num - 2
@@ -46,6 +49,7 @@ print('human_demand_int_unique = \n', human_demand_int_unique)
 visualizer = ResultVisualizer()
 evaluator = ResultEvaluator(veh_num, node_num, human_num, demand_penalty, time_penalty)
 
+# Initialize an routing plan
 routing_solver = OrtoolRoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, time_limit)
 routing_solver.set_model(edge_time, node_time)
 routing_solver.optimize()
@@ -53,31 +57,40 @@ route_list, route_time_list, team_list, y_sol = routing_solver.get_plan()
 
 z_sol = None
 visualizer.print_results(route_list, route_time_list, team_list)
-visualizer.visualize_routes(node_pose, route_list)
-sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
-print('sum_obj = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (demand_penalty, demand_obj, time_penalty, result_max_time, sum_obj))
-print('node_visit = ', node_visit)
-
-human_matcher = OrtoolHumanMatcher(human_num, veh_num, max_human_in_team)
-human_in_team, z_sol, demand_result = human_matcher.optimize(human_demand_bool, y_sol)
-print('human_in_team', human_in_team)
-print('z_sol', z_sol)
-print('demand_result = ', demand_result)
-
+if flag_show_plot:
+    visualizer.visualize_routes(node_pose, route_list)
 sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
 print('sum_obj = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (demand_penalty, demand_obj, time_penalty, result_max_time, sum_obj))
 # print('node_visit = ', node_visit)
 
+sum_obj_list = np.empty(2*max_iter, dtype=np.float64)
+demand_obj_list = np.empty(2*max_iter, dtype=np.float64)
+result_max_time_list = np.empty(2*max_iter, dtype=np.float64)
+for i_iter in range(max_iter):
 
-result_dict = routing_solver.optimize_sub(edge_time, node_time, z_sol, human_demand_bool)
-route_list, route_time_list, team_list, y_sol = routing_solver.get_plan(flag_sub_solver=True)
+    human_matcher = OrtoolHumanMatcher(human_num, veh_num, max_human_in_team)
+    human_in_team, z_sol, demand_result = human_matcher.optimize(human_demand_bool, y_sol)
+    sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
+    # print('human_in_team', human_in_team)
+    # print('z_sol', z_sol)
+    # print('demand_result = ', demand_result)
+    print('sum_obj1 = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f ... (1)' % (demand_penalty, demand_obj, time_penalty, result_max_time, sum_obj))
+    # print('node_visit = ', node_visit)
+    sum_obj_list[2*i_iter] = sum_obj
+    demand_obj_list[2*i_iter] = demand_obj
+    result_max_time_list[2*i_iter] = result_max_time
+
+    result_dict = routing_solver.optimize_sub(edge_time, node_time, z_sol, human_demand_bool)
+    route_list, route_time_list, team_list, y_sol = routing_solver.get_plan(flag_sub_solver=True)
+    sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
+    print('sum_obj2 = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (demand_penalty, demand_obj, time_penalty, result_max_time, sum_obj))
+    # print('node_visit = ', node_visit)
+    sum_obj_list[2*i_iter+1] = sum_obj
+    demand_obj_list[2*i_iter+1] = demand_obj
+    result_max_time_list[2*i_iter+1] = result_max_time
 
 visualizer.print_results(route_list, route_time_list, team_list)
-visualizer.visualize_routes(node_pose, route_list)
-sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
-print('sum_obj = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (demand_penalty, demand_obj, time_penalty, result_max_time, sum_obj))
-print('node_visit = ', node_visit)
-
-
-# visualizer.show_plots()
+if flag_show_plot:
+    visualizer.visualize_routes(node_pose, route_list)
+    visualizer.show_plots()
 

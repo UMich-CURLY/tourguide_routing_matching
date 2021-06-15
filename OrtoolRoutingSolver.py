@@ -25,18 +25,7 @@ class OrtoolRoutingSolver:
         self.solver = pywrapcp.RoutingModel(self.manager)
         self.solution = None
 
-        # Create sub-routing model
-        self.sub_manager = []
-        self.sub_solver = []
-        self.sub_solution = []
-        for i in range(veh_num):
-            a_sub_manager = pywrapcp.RoutingIndexManager(self.node_num-1, 1, self.start_node)
-            a_sub_solver = pywrapcp.RoutingModel(a_sub_manager)
-            self.sub_manager.append(a_sub_manager)
-            self.sub_solver.append(a_sub_solver)
-            self.sub_solution.append(None)
-
-    def optimize_sub(self, edge_time, node_time, z_sol, human_demand_bool):
+    def optimize_sub(self, edge_time, node_time, z_sol, human_demand_bool, flag_verbose = False):
         '''
         z_sol:             (human_num, veh_num)
         human_demand_bool: (human_num, place_num), i.e. (human_num, node_num - 2)
@@ -48,6 +37,17 @@ class OrtoolRoutingSolver:
         result_dict['Optimized'] = True
         result_dict['Status'] = []
         start_time = time.time()
+
+        # Create sub-routing model
+        self.sub_manager = []
+        self.sub_solver = []
+        self.sub_solution = []
+        for i in range(self.veh_num):
+            a_sub_manager = pywrapcp.RoutingIndexManager(self.node_num-1, 1, self.start_node)
+            a_sub_solver = pywrapcp.RoutingModel(a_sub_manager)
+            self.sub_manager.append(a_sub_manager)
+            self.sub_solver.append(a_sub_solver)
+            self.sub_solution.append(None)
 
         for k in range(self.veh_num):
             for i in range(place_num):
@@ -103,9 +103,10 @@ class OrtoolRoutingSolver:
 
         # result_dict['IterCount'] = self.solver.iterations()
         # result_dict['NodeCount'] = self.solver.nodes()
-        print('Solution found: %d' % result_dict['Optimized'])
-        print('Optimization status:', result_dict['Status'])
-        print('Problem solved in %f seconds' % result_dict['Runtime'])
+        if flag_verbose:
+            print('Solution found: %d' % result_dict['Optimized'])
+            print('Optimization status:', result_dict['Status'])
+            print('Problem solved in %f seconds' % result_dict['Runtime'])
         return result_dict
 
     def set_model(self, edge_time, node_time):

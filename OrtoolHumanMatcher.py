@@ -30,7 +30,7 @@ class OrtoolHumanMatcher:
         # Initialize constraints
         for i_veh in range(veh_num):
             temp_str = 'veh[' + str(i_veh) + ']'
-            temp_constraint = self.solver.Constraint(0, max_human_in_team[i_veh] + 0.0, temp_str) # Human number in a team
+            temp_constraint = self.solver.Constraint(1, max_human_in_team[i_veh] + 0.0, temp_str) # Human number in a team
             for i_human in range(human_num):
                 i_z = veh_num * i_human + i_veh
                 temp_constraint.SetCoefficient(self.z_var[i_z], 1)

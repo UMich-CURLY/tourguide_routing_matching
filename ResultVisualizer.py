@@ -60,7 +60,7 @@ class ResultVisualizer:
                 continue
             fixed_positions1 = {}
             for i in range(node_num):
-                fixed_positions1[i] = node_pose[i, :] + 0.1 * (k - veh_num/2)
+                fixed_positions1[i] = node_pose[i, :] + 1.0 * (k - veh_num/2)
             if len(route_list[k])-1 == 4:
                 use_color = self.the_color[k%len(self.the_color)]
             else:
