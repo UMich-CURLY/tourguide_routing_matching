@@ -160,7 +160,12 @@ class GurobiRoutingSolver:
                     team.append(k)
             team_list.append(team)
             print(team)
-        
+
+        y_sol = np.zeros((self.veh_num, self.node_num-2), dtype=np.float64)
+        for i in range(self.node_num-2):
+            for k in team_list[i]:
+                y_sol[k,i] = 1.0
+
         # print(time_mat)
-        return route_node_list, route_time_list, team_list
+        return route_node_list, route_time_list, team_list, y_sol
 
