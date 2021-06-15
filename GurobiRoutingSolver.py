@@ -107,6 +107,10 @@ class GurobiRoutingSolver:
                     constr = self.time_var[k,i] - self.time_var[k,j] + edge_time[k,i,j] + node_time[k,i] - self.LARGETIME * (1 - self.x_var[k,i,j])
                     constr_name = 'edge_time[' + str(k) + ',' + str(i) + ',' + str(j) + ']'
                     self.solver.addConstr(constr <= 0, constr_name)
+                    # Optional
+                    constr = self.time_var[k,i] - self.time_var[k,j] + edge_time[k,i,j] + node_time[k,i] + self.LARGETIME * (1 - self.x_var[k,i,j])
+                    constr_name = 'edge_time2[' + str(k) + ',' + str(i) + ',' + str(j) + ']'
+                    self.solver.addConstr(constr >= 0, constr_name)
         for k in range(self.veh_num):
             for i in range(self.node_num):
                 constr_name = 'max_time[' + str(k) + ',' + str(i) + ']'
