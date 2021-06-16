@@ -40,6 +40,12 @@ class ResultEvaluator:
         sum_obj = self.demand_penalty * demand_obj + self.time_penalty * result_max_time
         return sum_obj, demand_obj, result_max_time,  node_visit
 
+    def count_human(self, human_in_team, veh_num):
+        veh_values_temp, human_counts_temp = np.unique(human_in_team, return_counts=True)
+        human_counts = np.zeros(veh_num, dtype=int)
+        for i_veh in range(human_counts_temp.shape[0]):
+            human_counts[ veh_values_temp[i_veh] ] = human_counts_temp[i_veh]
+        return human_counts
 
 
 
