@@ -20,11 +20,6 @@ class OrtoolRoutingSolver:
         self.start_node = self.node_num - 2
         self.global_penalty = 1000.0
 
-        # Create Routing Model.
-        self.manager = pywrapcp.RoutingIndexManager(self.node_num-1, self.veh_num, self.start_node)
-        self.solver = pywrapcp.RoutingModel(self.manager)
-        self.solution = None
-
     def optimize_sub(self, edge_time, node_time, z_sol, human_demand_bool, route_list = None, flag_verbose = False):
         '''
         z_sol:             (human_num, veh_num)
@@ -114,6 +109,11 @@ class OrtoolRoutingSolver:
         return result_dict
 
     def set_model(self, edge_time, node_time):
+        # Create Routing Model.
+        self.manager = pywrapcp.RoutingIndexManager(self.node_num-1, self.veh_num, self.start_node)
+        self.solver = pywrapcp.RoutingModel(self.manager)
+        self.solution = None
+
         distance_matrix = edge_time[0, :self.node_num-1, :self.node_num-1] + 0
         distance_matrix += node_time[0, :self.node_num-1].reshape(self.node_num-1, 1)
 
