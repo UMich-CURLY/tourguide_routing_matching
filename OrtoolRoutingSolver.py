@@ -25,7 +25,7 @@ class OrtoolRoutingSolver:
         self.solver = pywrapcp.RoutingModel(self.manager)
         self.solution = None
 
-    def optimize_sub(self, edge_time, node_time, z_sol, human_demand_bool, flag_verbose = False):
+    def optimize_sub(self, edge_time, node_time, z_sol, human_demand_bool, route_list = None, flag_verbose = False):
         '''
         z_sol:             (human_num, veh_num)
         human_demand_bool: (human_num, place_num), i.e. (human_num, node_num - 2)
@@ -79,18 +79,22 @@ class OrtoolRoutingSolver:
                 True,  # start cumul to zero
                 dimension_name)
             distance_dimension = self.sub_solver[k].GetDimensionOrDie(dimension_name)
-            temp_penalty = int(self.global_penalty * self.time_penalty)
-            distance_dimension.SetGlobalSpanCostCoefficient(temp_penalty)
+            # temp_penalty = int(self.global_penalty * self.time_penalty)
+            # distance_dimension.SetGlobalSpanCostCoefficient(temp_penalty)
 
             # Allow to drop nodes.
             for i in range(place_num):
-                temp_penalty = int(penalty_mat[k, i] * self.demand_penalty * self.global_penalty)
+                temp_penalty = int(penalty_mat[k, i] * self.demand_penalty)
                 self.sub_solver[k].AddDisjunction([self.sub_manager[k].NodeToIndex(i)], temp_penalty)
 
-            search_parameters = pywrapcp.DefaultRoutingSearchParameters()
-            search_parameters.first_solution_strategy = (routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
             # Solve the problem.
-            a_sub_solution = self.sub_solver[k].SolveWithParameters(search_parameters)
+            search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+            if (route_list is not None) and len(route_list[k]) > 2:
+                initial_solution = self.sub_solver[k].ReadAssignmentFromRoutes([route_list[k][1:-1]], True)
+                a_sub_solution = self.sub_solver[k].SolveFromAssignmentWithParameters(initial_solution, search_parameters)
+            else:
+                search_parameters.first_solution_strategy = (routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+                a_sub_solution = self.sub_solver[k].SolveWithParameters(search_parameters)
 
             result_dict['Status'].append(self.sub_solver[k].status())
             if self.sub_solver[k].status() != 1:

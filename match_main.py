@@ -11,18 +11,18 @@ flag_verbose = False
 flag_show_plot = True
 folder_name = './temp/'
 
-veh_num = 4
-node_num = 10
+veh_num = 10
+node_num = 50
 demand_penalty = 1000.0
 time_penalty = 1.0
-time_limit = 500
+time_limit = 900
 
-human_num = 10
-human_choice = 5
+human_num = 100
+human_choice = 10
 
 max_iter = 10
 
-max_human_in_team = np.ones(veh_num, dtype=int) * (human_num // veh_num + 1)
+max_human_in_team = np.ones(veh_num, dtype=int) * 15 # (human_num // veh_num + 5)
 place_num = node_num - 2
 
 # Initialize spacial maps
@@ -82,7 +82,7 @@ for i_iter in range(max_iter):
     demand_obj_list[2*i_iter] = demand_obj
     result_max_time_list[2*i_iter] = result_max_time
 
-    result_dict = routing_solver.optimize_sub(edge_time, node_time, z_sol, human_demand_bool)
+    result_dict = routing_solver.optimize_sub(edge_time, node_time, z_sol, human_demand_bool, route_list)
     route_list, route_time_list, team_list, y_sol = routing_solver.get_plan(flag_sub_solver=True)
     sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
     print('sum_obj2 = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (demand_penalty, demand_obj, time_penalty, result_max_time, sum_obj))
@@ -91,6 +91,10 @@ for i_iter in range(max_iter):
     demand_obj_list[2*i_iter+1] = demand_obj
     result_max_time_list[2*i_iter+1] = result_max_time
 
+
+human_counts = evaluator.count_human(human_in_team, veh_num)
+print('human_in_team', human_in_team)
+print('human_counts', human_counts)
 print('totam_demand = ', human_demand_bool.sum())
 
 visualizer.print_results(route_list, route_time_list, team_list)
@@ -101,26 +105,26 @@ if flag_show_plot:
 
     iter_range = np.arange(2*max_iter)
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.plot(iter_range, sum_obj_list)
-    ax.set_xlabel('Iteration')
-    ax.set_ylabel('Objective function')
-    fig_file = folder_name + "objective.png"
-    fig.savefig(fig_file, bbox_inches='tight')
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.plot(iter_range, sum_obj_list)
+ax.set_xlabel('Iteration')
+ax.set_ylabel('Objective function')
+fig_file = folder_name + "objective.png"
+fig.savefig(fig_file, bbox_inches='tight')
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.plot(iter_range, demand_obj_list)
-    ax.set_xlabel('Iteration')
-    ax.set_ylabel('Dropped demand')
-    fig_file = folder_name + "demand.png"
-    fig.savefig(fig_file, bbox_inches='tight')
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.plot(iter_range, demand_obj_list)
+ax.set_xlabel('Iteration')
+ax.set_ylabel('Dropped demand')
+fig_file = folder_name + "demand.png"
+fig.savefig(fig_file, bbox_inches='tight')
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.plot(iter_range, result_max_time_list / 10)
-    ax.set_xlabel('Iteration')
-    ax.set_ylabel('Max tour time (min)')
-    fig_file = folder_name + "maxtime.png"
-    fig.savefig(fig_file, bbox_inches='tight')
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.plot(iter_range, result_max_time_list / 10)
+ax.set_xlabel('Iteration')
+ax.set_ylabel('Max tour time (min)')
+fig_file = folder_name + "maxtime.png"
+fig.savefig(fig_file, bbox_inches='tight')
