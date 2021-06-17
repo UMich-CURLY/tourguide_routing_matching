@@ -122,8 +122,6 @@ class OrtoolRoutingSolver:
         self.data['node_time'] = node_time
         self.data['distance_matrix'] = distance_matrix
 
-        print('distance_matrix')
-
         transit_callback_index = self.solver.RegisterTransitCallback(self.distance_callback)
 
         # Define cost of each arc.
@@ -177,6 +175,33 @@ class OrtoolRoutingSolver:
         # print('dist_out = ', dist_out)
         return dist_out
 
+    def get_random_plan(self, edge_time, node_time):
+        place_num = self.node_num-2
+        place_perm = np.random.permutation(place_num)
+        route_node_list = []
+        team_list = [[] for i in range(self.node_num-2)]
+        y_sol = np.zeros((self.veh_num, self.node_num-2), dtype=np.float64)
+        for i_place in range(place_num):
+            i_veh = i_place % self.veh_num
+            node_id = place_perm[i_place]
+            if i_place == i_veh:
+                route_node_list.append([self.start_node])
+            route_node_list[i_veh].append(node_id)
+            team_list[node_id].append(i_veh)
+            y_sol[i_veh, node_id] = 1.0
+        for i_veh in range(self.veh_num):
+            route_node_list[i_veh].append(self.start_node)
+        route_time_list = []
+        for i_veh in range(self.veh_num):
+            assert len(route_node_list) > 2, 'OrtoolRoutingSolver.get_random_plan: An empty route!'
+            route_time = 0.0
+            route_time_list.append([route_time])
+            for i_node in range(len(route_node_list[i_veh]) - 1):
+                node_i = route_node_list[i_veh][i_node]
+                node_j = route_node_list[i_veh][i_node+1]
+                route_time += edge_time[i_veh,node_i,node_j] + node_time[i_veh,node_i]
+                route_time_list[i_veh].append(route_time)
+        return route_node_list, route_time_list, team_list, y_sol
 
     def get_plan(self, flag_sub_solver = False, flag_verbose = False):
         """Prints solution on console."""
