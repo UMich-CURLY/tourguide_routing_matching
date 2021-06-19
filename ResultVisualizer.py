@@ -66,6 +66,10 @@ class ResultVisualizer:
         # pos = nx.spring_layout(G,pos=fixed_positions, fixed = fixed_nodes)
         flag_graph_initialized = False
         temp_plot = plt.figure()
+        ax = temp_plot.add_subplot(111)
+        ax.set_xlim([-10.0, 210.0])
+        ax.set_ylim([-10.0, 210.0])
+        ax.set_aspect('equal', adjustable='box')
         for k in range(veh_num):
             a_graph = graph_list[k]
             if a_graph is None:
