@@ -12,9 +12,10 @@ flag_verbose = False
 flag_show_plot = True
 folder_name = './temp/'
 
-flag_read_testcase = False
-flag_save_testcase = True
+flag_read_testcase = True
+flag_save_testcase = False
 testcase_file = './testcase/case.dat'
+flag_initialize = 1 # 0: VRP, 1: random
 
 veh_num = 10
 node_num = 50
@@ -37,6 +38,9 @@ if flag_read_testcase:
 else:
     node_pose = np.random.rand(node_num, 2) * 200.0
     human_demand_int = np.random.randint(0, place_num, (human_num,human_choice) )
+if flag_save_testcase:
+    data_dict = {'node_pose': node_pose, 'human_demand_int': human_demand_int}
+    helper.save_dict(testcase_file, data_dict)
 
 # Initialize spacial maps
 node_pose[-1, :] = 100.0
@@ -58,19 +62,21 @@ for l in range(human_num):
     human_demand_int_unique.append(np.unique(human_demand_int[l]))
 print('human_demand_int_unique = \n', human_demand_int_unique)
 
-if flag_save_testcase:
-    data_dict = {'node_pose': node_pose, 'human_demand_int': human_demand_int}
-    helper.save_dict(testcase_file, data_dict)
-
 # Initialize the visualizer and evaluator
 visualizer = ResultVisualizer()
 evaluator = ResultEvaluator(veh_num, node_num, human_num, demand_penalty, time_penalty)
 
 # Initialize an routing plan
 routing_solver = OrtoolRoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, time_limit)
-routing_solver.set_model(edge_time, node_time)
-routing_solver.optimize()
-route_list, route_time_list, team_list, y_sol = routing_solver.get_plan()
+if flag_initialize == 0:
+    routing_solver.set_model(edge_time, node_time)
+    routing_solver.optimize()
+    route_list, route_time_list, team_list, y_sol = routing_solver.get_plan()
+else:
+    # routing_solver.set_model(edge_time, node_time)
+    # routing_solver.optimize()
+    # route_list, route_time_list, team_list, y_sol = routing_solver.get_plan()
+    route_list, route_time_list, team_list, y_sol = routing_solver.get_random_plan(edge_time, node_time)
 
 z_sol = None
 visualizer.print_results(route_list, route_time_list, team_list)
@@ -84,7 +90,6 @@ sum_obj_list = np.empty(2*max_iter, dtype=np.float64)
 demand_obj_list = np.empty(2*max_iter, dtype=np.float64)
 result_max_time_list = np.empty(2*max_iter, dtype=np.float64)
 for i_iter in range(max_iter):
-
     human_matcher = OrtoolHumanMatcher(human_num, veh_num, max_human_in_team)
     human_in_team, z_sol, demand_result = human_matcher.optimize(human_demand_bool, y_sol)
     sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
@@ -97,6 +102,9 @@ for i_iter in range(max_iter):
     demand_obj_list[2*i_iter] = demand_obj
     result_max_time_list[2*i_iter] = result_max_time
 
+    if (flag_initialize != 0) and (i_iter == 0):
+        route_list = None
+    route_list = None
     result_dict = routing_solver.optimize_sub(edge_time, node_time, z_sol, human_demand_bool, route_list)
     route_list, route_time_list, team_list, y_sol = routing_solver.get_plan(flag_sub_solver=True)
     sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)

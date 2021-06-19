@@ -52,8 +52,8 @@ class OrtoolRoutingSolver:
             def temp_distance_callback(from_index, to_index):
                 """Returns the distance between the two nodes."""
                 # Convert from routing variable Index to distance matrix NodeIndex.
-                from_node = self.manager.IndexToNode(from_index)
-                to_node = self.manager.IndexToNode(to_index)
+                from_node = self.sub_manager[k].IndexToNode(from_index)
+                to_node = self.sub_manager[k].IndexToNode(to_index)
                 if from_node == to_node:
                     dist_out = 0.0
                 else:
@@ -209,12 +209,13 @@ class OrtoolRoutingSolver:
         route_time_list = []
         team_list = [[] for i in range(self.node_num-2)]
 
-        solution = self.solution
-        solver = self.solver
-        manager = self.manager
-        time_dimension = solver.GetDimensionOrDie('Time')
-        if flag_verbose:
-            print(f'Objective: {solution.ObjectiveValue()}')
+        if not flag_sub_solver:
+            solution = self.solution
+            solver = self.solver
+            manager = self.manager
+            time_dimension = solver.GetDimensionOrDie('Time')
+            if flag_verbose:
+                print(f'Objective: {solution.ObjectiveValue()}')
         total_max_time = 0
         for vehicle_id in range(self.veh_num):
             route_node = []
