@@ -13,14 +13,14 @@ class OrtoolRoutingSolver:
         self.demand_penalty = demand_penalty
         self.time_penalty = time_penalty
         if time_limit <= 1:
-            self.time_limit = 3000
+            self.time_limit = 30000
         else:
             self.time_limit = int(time_limit)
 
         self.start_node = self.node_num - 2
         self.global_penalty = 1000.0
 
-    def optimize_sub(self, edge_time, node_time, z_sol, human_demand_bool, route_list = None, flag_verbose = False):
+    def optimize_sub(self, edge_time, node_time, z_sol, human_demand_bool, node_seq, route_list = None, flag_verbose = False):
         '''
         z_sol:             (human_num, veh_num)
         human_demand_bool: (human_num, place_num), i.e. (human_num, node_num - 2)
@@ -82,6 +82,9 @@ class OrtoolRoutingSolver:
                 temp_penalty = int(penalty_mat[k, i] * self.demand_penalty)
                 self.sub_solver[k].AddDisjunction([self.sub_manager[k].NodeToIndex(i)], temp_penalty)
 
+            if node_seq is not None:
+                self.add_seq_constraint(self.sub_solver[k], self.sub_manager[k], node_seq)
+
             # Solve the problem.
             search_parameters = pywrapcp.DefaultRoutingSearchParameters()
             if (route_list is not None) and len(route_list[k]) > 2:
@@ -108,7 +111,7 @@ class OrtoolRoutingSolver:
             print('Problem solved in %f seconds' % result_dict['Runtime'])
         return result_dict
 
-    def set_model(self, edge_time, node_time):
+    def set_model(self, edge_time, node_time, node_seq = None):
         # Create Routing Model.
         self.manager = pywrapcp.RoutingIndexManager(self.node_num-1, self.veh_num, self.start_node)
         self.solver = pywrapcp.RoutingModel(self.manager)
@@ -138,15 +141,48 @@ class OrtoolRoutingSolver:
         distance_dimension = self.solver.GetDimensionOrDie(dimension_name)
         temp_penalty = int(self.global_penalty * self.time_penalty)
         distance_dimension.SetGlobalSpanCostCoefficient(temp_penalty)
-    
+        
+        if node_seq is not None:
+            self.add_seq_constraint_placeholder(self.solver, self.manager, node_seq)
+
+    def add_seq_constraint_placeholder(self, solver, manager, node_seq):
+        distance_dimension = solver.GetDimensionOrDie('Time')
+        for i_seq in range(len(node_seq)):
+            for i_node in range(len(node_seq[i_seq]) - 1):
+                node_i = node_seq[i_seq][i_node]
+                node_j = node_seq[i_seq][i_node+1]
+                pickup_index = manager.NodeToIndex(node_i)
+                delivery_index = manager.NodeToIndex(node_j)
+                # print('node:', node_i, node_j, 'index:', pickup_index, delivery_index)
+                solver.AddPickupAndDelivery(pickup_index, delivery_index)
+                solver.solver().Add(solver.VehicleVar(pickup_index) == solver.VehicleVar(delivery_index))
+                solver.solver().Add(distance_dimension.CumulVar(pickup_index) <= distance_dimension.CumulVar(delivery_index))
+
+    def add_seq_constraint(self, solver, manager, node_seq):
+        distance_dimension = solver.GetDimensionOrDie('Time')
+        for i_seq in range(len(node_seq)):
+            for i_node in range(len(node_seq[i_seq]) - 1):
+                node_i = node_seq[i_seq][i_node]
+                node_j = node_seq[i_seq][i_node+1]
+                pickup_index = manager.NodeToIndex(node_i)
+                delivery_index = manager.NodeToIndex(node_j)
+                # print('node:', node_i, node_j, 'index:', pickup_index, delivery_index)
+                # solver.AddPickupAndDelivery(pickup_index, delivery_index)
+                # solver.solver().Add(solver.VehicleVar(pickup_index) == solver.VehicleVar(delivery_index))
+                solver.solver().Add(distance_dimension.CumulVar(pickup_index) <= distance_dimension.CumulVar(delivery_index))
+
     def optimize(self):
+        print('haha1')
         # Setting first solution heuristic.
         search_parameters = pywrapcp.DefaultRoutingSearchParameters()
         search_parameters.first_solution_strategy = (routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
         # Solve the problem.
         start_time = time.time()
+        print('haha2')
         self.solution = self.solver.SolveWithParameters(search_parameters)
+        print('haha3', self.solution)
         end_time = time.time()
+        print('haha20')
 
         result_dict = {}
         result_dict['Optimized'] = self.solver.status() == 1

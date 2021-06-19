@@ -12,24 +12,35 @@ flag_verbose = False
 flag_show_plot = True
 folder_name = './temp/'
 
-flag_read_testcase = True
-flag_save_testcase = False
+flag_read_testcase = False
+flag_save_testcase = True
 testcase_file = './testcase/case.dat'
-flag_initialize = 1 # 0: VRP, 1: random
+flag_initialize = 0 # 0: VRP, 1: random
 
-veh_num = 10
-node_num = 50
+# veh_num = 10
+# node_num = 50
+# demand_penalty = 1000.0
+# time_penalty = 1.0
+# time_limit = 900
+# human_num = 100
+# human_choice = 10
+# max_iter = 10
+# max_human_in_team = np.ones(veh_num, dtype=int) * 15 # (human_num // veh_num + 5)
+# place_num = node_num - 2
+
+veh_num = 4
+node_num = 12
 demand_penalty = 1000.0
 time_penalty = 1.0
-time_limit = 900
-
-human_num = 100
-human_choice = 10
-
+time_limit = 500
+human_num = 10
+human_choice = 5
 max_iter = 10
-
-max_human_in_team = np.ones(veh_num, dtype=int) * 15 # (human_num // veh_num + 5)
+max_human_in_team = np.ones(veh_num, dtype=int) * 3 # (human_num // veh_num + 5)
 place_num = node_num - 2
+
+# node_seq = None
+node_seq = [[0,1,2], [3,4]]
 
 if flag_read_testcase:
     data_dict = helper.load_dict(testcase_file)
@@ -104,7 +115,7 @@ for i_iter in range(max_iter):
 
     if (flag_initialize != 0) and (i_iter == 0):
         route_list = None
-    result_dict = routing_solver.optimize_sub(edge_time, node_time, z_sol, human_demand_bool, route_list)
+    result_dict = routing_solver.optimize_sub(edge_time, node_time, z_sol, human_demand_bool, node_seq, route_list)
     route_list, route_time_list, team_list, y_sol = routing_solver.get_plan(flag_sub_solver=True)
     sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
     print('sum_obj2 = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (demand_penalty, demand_obj, time_penalty, result_max_time, sum_obj))
