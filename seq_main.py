@@ -11,7 +11,8 @@ human_num = 10
 demand_penalty = 10.0
 time_penalty = 1.0
 time_limit = 0
-folder_name = './temp/initial_'
+folder_name = './temp/seq_'
+
 
 # node_pose = np.array( [[ 9.84212669 ,  1.80265101],
 #  [13.03963515 , 16.09854408],
@@ -37,6 +38,8 @@ node_pose = np.random.rand(node_num, 2) * 200.0
 node_pose[-1, :] = 100.0
 node_pose[-2, :] = 100.0
 
+node_seq = [[0,1,2], [3,4]]
+
 print('node_pose = ', node_pose)
 
 edge_dist = squareform(pdist(node_pose))
@@ -50,18 +53,7 @@ node_time = np.ones((veh_num,node_num), dtype=np.float64) * 30.0
 visualizer = ResultVisualizer()
 evaluator = ResultEvaluator(veh_num, node_num, human_num, demand_penalty, time_penalty)
 
-routing_solver = GurobiRoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, time_limit)
-routing_solver.set_model(edge_time, node_time)
-routing_solver.set_all_task_complete()
-routing_solver.set_objective()
-routing_solver.optimize()
-route_list, route_time_list, team_list, y_sol = routing_solver.get_plan()
-visualizer.print_results(route_list, route_time_list, team_list)
-visualizer.visualize_routes(node_pose, route_list)
-sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, None, y_sol, None)
-print('result_max_time = ', result_max_time)
-print('node_visit = ', node_visit)
-
+# First run: without sequence constraint
 routing_solver = OrtoolRoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, time_limit)
 routing_solver.set_model(edge_time, node_time)
 routing_solver.optimize()
@@ -72,7 +64,18 @@ visualizer.visualize_routes(node_pose, route_list)
 sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, None, y_sol, None)
 print('result_max_time = ', result_max_time)
 print('node_visit = ', node_visit)
-
-# visualizer.show_plots()
 visualizer.save_plots(folder_name)
 
+# Second run: with sequence constraint
+routing_solver = OrtoolRoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, time_limit)
+routing_solver.set_model(edge_time, node_time, node_seq)
+routing_solver.optimize()
+route_list, route_time_list, team_list, y_sol = routing_solver.get_plan()
+
+visualizer.print_results(route_list, route_time_list, team_list)
+visualizer.visualize_routes(node_pose, route_list)
+sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, None, y_sol, None)
+print('result_max_time = ', result_max_time)
+print('node_visit = ', node_visit)
+
+visualizer.save_plots(folder_name)

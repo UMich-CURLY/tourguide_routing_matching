@@ -143,20 +143,7 @@ class OrtoolRoutingSolver:
         distance_dimension.SetGlobalSpanCostCoefficient(temp_penalty)
         
         if node_seq is not None:
-            self.add_seq_constraint_placeholder(self.solver, self.manager, node_seq)
-
-    def add_seq_constraint_placeholder(self, solver, manager, node_seq):
-        distance_dimension = solver.GetDimensionOrDie('Time')
-        for i_seq in range(len(node_seq)):
-            for i_node in range(len(node_seq[i_seq]) - 1):
-                node_i = node_seq[i_seq][i_node]
-                node_j = node_seq[i_seq][i_node+1]
-                pickup_index = manager.NodeToIndex(node_i)
-                delivery_index = manager.NodeToIndex(node_j)
-                # print('node:', node_i, node_j, 'index:', pickup_index, delivery_index)
-                solver.AddPickupAndDelivery(pickup_index, delivery_index)
-                solver.solver().Add(solver.VehicleVar(pickup_index) == solver.VehicleVar(delivery_index))
-                solver.solver().Add(distance_dimension.CumulVar(pickup_index) <= distance_dimension.CumulVar(delivery_index))
+            self.add_seq_constraint(self.solver, self.manager, node_seq)
 
     def add_seq_constraint(self, solver, manager, node_seq):
         distance_dimension = solver.GetDimensionOrDie('Time')
@@ -164,25 +151,30 @@ class OrtoolRoutingSolver:
             for i_node in range(len(node_seq[i_seq]) - 1):
                 node_i = node_seq[i_seq][i_node]
                 node_j = node_seq[i_seq][i_node+1]
-                pickup_index = manager.NodeToIndex(node_i)
-                delivery_index = manager.NodeToIndex(node_j)
-                # print('node:', node_i, node_j, 'index:', pickup_index, delivery_index)
-                # solver.AddPickupAndDelivery(pickup_index, delivery_index)
-                # solver.solver().Add(solver.VehicleVar(pickup_index) == solver.VehicleVar(delivery_index))
-                solver.solver().Add(distance_dimension.CumulVar(pickup_index) <= distance_dimension.CumulVar(delivery_index))
+                nodeid_i = manager.NodeToIndex(node_i)
+                nodeid_j = manager.NodeToIndex(node_j)
+                # print('node:', node_i, node_j, 'index:', nodeid_i, nodeid_j)
+                # solver.AddPickupAndDelivery(nodeid_i, nodeid_j)
+                # solver.solver().Add(solver.VehicleVar(nodeid_i) == solver.VehicleVar(nodeid_j))
+                # solver.solver().Add(distance_dimension.CumulVar(nodeid_i) <= distance_dimension.CumulVar(nodeid_j))
+
+                # j active is based on i active
+                solver.solver().Add(solver.ActiveVar(nodeid_j) <= solver.ActiveVar(nodeid_i))
+                # j's time is after i's time (visit i before j)
+                solver.solver().Add(distance_dimension.CumulVar(nodeid_i) <= distance_dimension.CumulVar(nodeid_j))
+                # i and j should be using the same vehicle
+                constraintActive = solver.ActiveVar(nodeid_i) * solver.ActiveVar(nodeid_j)
+                solver.solver().Add(constraintActive * (solver.VehicleVar(nodeid_i) - solver.VehicleVar(nodeid_j)) == 0 )
+
 
     def optimize(self):
-        print('haha1')
         # Setting first solution heuristic.
         search_parameters = pywrapcp.DefaultRoutingSearchParameters()
         search_parameters.first_solution_strategy = (routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
         # Solve the problem.
         start_time = time.time()
-        print('haha2')
         self.solution = self.solver.SolveWithParameters(search_parameters)
-        print('haha3', self.solution)
         end_time = time.time()
-        print('haha20')
 
         result_dict = {}
         result_dict['Optimized'] = self.solver.status() == 1
