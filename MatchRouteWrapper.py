@@ -65,6 +65,11 @@ class MatchRouteWrapper:
         sum_obj_list = np.empty(2*max_iter, dtype=np.float64)
         demand_obj_list = np.empty(2*max_iter, dtype=np.float64)
         result_max_time_list = np.empty(2*max_iter, dtype=np.float64)
+
+        z_sol = None
+        if self.flag_verbose:
+            sum_obj, demand_obj, result_max_time, node_visit = self.evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
+            print('sum_obj = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (self.demand_penalty, demand_obj, self.time_penalty, result_max_time, sum_obj))
         for i_iter in range(max_iter):
             # self.human_matcher = OrtoolHumanMatcher(self.human_num, self.veh_num, self.max_human_in_team)
             temp_flag_success, human_in_team, z_sol, demand_result = self.human_matcher.optimize(human_demand_bool, y_sol)

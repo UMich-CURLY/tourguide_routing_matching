@@ -2,10 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import helper
 from scipy.spatial.distance import squareform, pdist
-from OrtoolRoutingSolver import OrtoolRoutingSolver
 from ResultVisualizer import ResultVisualizer
-from ResultEvaluator import ResultEvaluator
-from OrtoolHumanMatcher import OrtoolHumanMatcher
 from MatchRouteWrapper import MatchRouteWrapper
 
 flag_verbose = False
@@ -72,25 +69,17 @@ print('human_demand_int_unique = \n', human_demand_int_unique)
 
 # Initialize the visualizer and evaluator
 visualizer = ResultVisualizer()
-evaluator = ResultEvaluator(veh_num, node_num, human_num, demand_penalty, time_penalty)
 
 # Initialize an routing plan
-routing_solver = OrtoolRoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, time_limit)
-
 route_list, route_time_list, team_list, y_sol = global_planner.initialize_plan(edge_time, node_time, flag_initialize)
 
-z_sol = None
 visualizer.print_results(route_list, route_time_list, team_list)
 if flag_show_plot:
     visualizer.visualize_routes(node_pose, route_list)
-sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
-print('sum_obj = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (demand_penalty, demand_obj, time_penalty, result_max_time, sum_obj))
-# print('node_visit = ', node_visit)
 
-print('route_list = ', route_list)
 flag_success, route_list, route_time_list, team_list, human_in_team, y_sol, z_sol, sum_obj_list, demand_obj_list, result_max_time_list = global_planner.generate_plan(edge_time, node_time, human_demand_bool, route_list, y_sol, node_seq, max_iter)
 
-human_counts = evaluator.count_human(human_in_team, veh_num)
+human_counts = global_planner.evaluator.count_human(human_in_team, veh_num)
 print('human_in_team', human_in_team)
 print('human_counts', human_counts)
 print('total_demand = ', human_demand_bool.sum())
@@ -98,31 +87,30 @@ print('total_demand = ', human_demand_bool.sum())
 visualizer.print_results(route_list, route_time_list, team_list)
 if flag_show_plot:
     visualizer.visualize_routes(node_pose, route_list)
-    # visualizer.show_plots()
     visualizer.save_plots(folder_name)
+    # visualizer.show_plots()
 
     iter_range = np.arange(2*max_iter)
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(iter_range, sum_obj_list)
+    ax.set_xlabel('Iteration')
+    ax.set_ylabel('Objective function')
+    fig_file = folder_name + "objective.png"
+    fig.savefig(fig_file, bbox_inches='tight')
 
-fig = plt.figure()
-ax = fig.add_subplot(111)
-ax.plot(iter_range, sum_obj_list)
-ax.set_xlabel('Iteration')
-ax.set_ylabel('Objective function')
-fig_file = folder_name + "objective.png"
-fig.savefig(fig_file, bbox_inches='tight')
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(iter_range, demand_obj_list)
+    ax.set_xlabel('Iteration')
+    ax.set_ylabel('Dropped demand')
+    fig_file = folder_name + "demand.png"
+    fig.savefig(fig_file, bbox_inches='tight')
 
-fig = plt.figure()
-ax = fig.add_subplot(111)
-ax.plot(iter_range, demand_obj_list)
-ax.set_xlabel('Iteration')
-ax.set_ylabel('Dropped demand')
-fig_file = folder_name + "demand.png"
-fig.savefig(fig_file, bbox_inches='tight')
-
-fig = plt.figure()
-ax = fig.add_subplot(111)
-ax.plot(iter_range, result_max_time_list / 10)
-ax.set_xlabel('Iteration')
-ax.set_ylabel('Max tour time (min)')
-fig_file = folder_name + "maxtime.png"
-fig.savefig(fig_file, bbox_inches='tight')
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(iter_range, result_max_time_list / 10)
+    ax.set_xlabel('Iteration')
+    ax.set_ylabel('Max tour time (min)')
+    fig_file = folder_name + "maxtime.png"
+    fig.savefig(fig_file, bbox_inches='tight')
