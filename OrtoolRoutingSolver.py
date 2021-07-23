@@ -109,7 +109,8 @@ class OrtoolRoutingSolver:
             print('Solution found: %d' % result_dict['Optimized'])
             print('Optimization status:', result_dict['Status'])
             print('Problem solved in %f seconds' % result_dict['Runtime'])
-        return result_dict
+        flag_success = result_dict['Optimized']
+        return flag_success, result_dict
 
     def set_model(self, edge_time, node_time, node_seq = None):
         # Create Routing Model.

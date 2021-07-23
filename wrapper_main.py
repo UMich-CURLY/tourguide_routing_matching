@@ -2,18 +2,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import helper
 from scipy.spatial.distance import squareform, pdist
-from GurobiRoutingSolver import GurobiRoutingSolver
 from OrtoolRoutingSolver import OrtoolRoutingSolver
 from ResultVisualizer import ResultVisualizer
 from ResultEvaluator import ResultEvaluator
 from OrtoolHumanMatcher import OrtoolHumanMatcher
+from MatchRouteWrapper import MatchRouteWrapper
 
 flag_verbose = False
 flag_show_plot = True
 folder_name = './temp/'
 
-flag_read_testcase = False
-flag_save_testcase = True
+flag_read_testcase = True
+flag_save_testcase = False
 testcase_file = './testcase/case.dat'
 flag_initialize = 0 # 0: VRP, 1: random
 
@@ -42,6 +42,8 @@ place_num = node_num - 2
 # node_seq = None
 node_seq = [[0,1,2], [3,4]]
 
+global_planner = MatchRouteWrapper(veh_num, node_num, human_choice, human_num, max_human_in_team, demand_penalty, time_penalty, time_limit)
+
 if flag_read_testcase:
     data_dict = helper.load_dict(testcase_file)
     node_pose = data_dict['node_pose']
@@ -65,12 +67,7 @@ node_time = np.ones((veh_num,node_num), dtype=np.float64) * 30.0
 print('node_pose = ', node_pose)
 
 # Initialize human selections
-temp_index = np.arange(human_num).reshape(-1,1).repeat(human_choice,axis=1)
-human_demand_bool = np.zeros((human_num, place_num), dtype=np.float64)
-human_demand_bool[temp_index.reshape(-1), human_demand_int.reshape(-1)] = 1.0
-human_demand_int_unique = []
-for l in range(human_num):
-    human_demand_int_unique.append(np.unique(human_demand_int[l]))
+human_demand_bool, human_demand_int_unique = global_planner.initialize_human_demand(human_demand_int)
 print('human_demand_int_unique = \n', human_demand_int_unique)
 
 # Initialize the visualizer and evaluator
@@ -79,15 +76,8 @@ evaluator = ResultEvaluator(veh_num, node_num, human_num, demand_penalty, time_p
 
 # Initialize an routing plan
 routing_solver = OrtoolRoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, time_limit)
-if flag_initialize == 0:
-    routing_solver.set_model(edge_time, node_time)
-    routing_solver.optimize()
-    route_list, route_time_list, team_list, y_sol = routing_solver.get_plan()
-else:
-    # routing_solver.set_model(edge_time, node_time)
-    # routing_solver.optimize()
-    # route_list, route_time_list, team_list, y_sol = routing_solver.get_plan()
-    route_list, route_time_list, team_list, y_sol = routing_solver.get_random_plan(edge_time, node_time)
+
+route_list, route_time_list, team_list, y_sol = global_planner.initialize_plan(edge_time, node_time, flag_initialize)
 
 z_sol = None
 visualizer.print_results(route_list, route_time_list, team_list)
@@ -97,38 +87,13 @@ sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_
 print('sum_obj = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (demand_penalty, demand_obj, time_penalty, result_max_time, sum_obj))
 # print('node_visit = ', node_visit)
 
-sum_obj_list = np.empty(2*max_iter, dtype=np.float64)
-demand_obj_list = np.empty(2*max_iter, dtype=np.float64)
-result_max_time_list = np.empty(2*max_iter, dtype=np.float64)
-for i_iter in range(max_iter):
-    human_matcher = OrtoolHumanMatcher(human_num, veh_num, max_human_in_team)
-    human_in_team, z_sol, demand_result = human_matcher.optimize(human_demand_bool, y_sol)
-    sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
-    # print('human_in_team', human_in_team)
-    # print('z_sol', z_sol)
-    # print('demand_result = ', demand_result)
-    print('sum_obj1 = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f ... (1)' % (demand_penalty, demand_obj, time_penalty, result_max_time, sum_obj))
-    # print('node_visit = ', node_visit)
-    sum_obj_list[2*i_iter] = sum_obj
-    demand_obj_list[2*i_iter] = demand_obj
-    result_max_time_list[2*i_iter] = result_max_time
-
-    if (flag_initialize != 0) and (i_iter == 0):
-        route_list = None
-    result_dict = routing_solver.optimize_sub(edge_time, node_time, z_sol, human_demand_bool, node_seq, route_list)
-    route_list, route_time_list, team_list, y_sol = routing_solver.get_plan(flag_sub_solver=True)
-    sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
-    print('sum_obj2 = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (demand_penalty, demand_obj, time_penalty, result_max_time, sum_obj))
-    # print('node_visit = ', node_visit)
-    sum_obj_list[2*i_iter+1] = sum_obj
-    demand_obj_list[2*i_iter+1] = demand_obj
-    result_max_time_list[2*i_iter+1] = result_max_time
-
+print('route_list = ', route_list)
+flag_success, route_list, route_time_list, team_list, human_in_team, y_sol, z_sol, sum_obj_list, demand_obj_list, result_max_time_list = global_planner.generate_plan(edge_time, node_time, human_demand_bool, route_list, y_sol, node_seq, max_iter)
 
 human_counts = evaluator.count_human(human_in_team, veh_num)
 print('human_in_team', human_in_team)
 print('human_counts', human_counts)
-print('totam_demand = ', human_demand_bool.sum())
+print('total_demand = ', human_demand_bool.sum())
 
 visualizer.print_results(route_list, route_time_list, team_list)
 if flag_show_plot:

@@ -12,8 +12,8 @@ flag_verbose = False
 flag_show_plot = True
 folder_name = './temp/'
 
-flag_read_testcase = False
-flag_save_testcase = True
+flag_read_testcase = True
+flag_save_testcase = False
 testcase_file = './testcase/case.dat'
 flag_initialize = 0 # 0: VRP, 1: random
 
@@ -102,7 +102,7 @@ demand_obj_list = np.empty(2*max_iter, dtype=np.float64)
 result_max_time_list = np.empty(2*max_iter, dtype=np.float64)
 for i_iter in range(max_iter):
     human_matcher = OrtoolHumanMatcher(human_num, veh_num, max_human_in_team)
-    human_in_team, z_sol, demand_result = human_matcher.optimize(human_demand_bool, y_sol)
+    flag_success, human_in_team, z_sol, demand_result = human_matcher.optimize(human_demand_bool, y_sol)
     sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
     # print('human_in_team', human_in_team)
     # print('z_sol', z_sol)
@@ -115,7 +115,7 @@ for i_iter in range(max_iter):
 
     if (flag_initialize != 0) and (i_iter == 0):
         route_list = None
-    result_dict = routing_solver.optimize_sub(edge_time, node_time, z_sol, human_demand_bool, node_seq, route_list)
+    flag_success, result_dict = routing_solver.optimize_sub(edge_time, node_time, z_sol, human_demand_bool, node_seq, route_list)
     route_list, route_time_list, team_list, y_sol = routing_solver.get_plan(flag_sub_solver=True)
     sum_obj, demand_obj, result_max_time, node_visit = evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
     print('sum_obj2 = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (demand_penalty, demand_obj, time_penalty, result_max_time, sum_obj))

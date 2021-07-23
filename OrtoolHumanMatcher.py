@@ -85,4 +85,5 @@ class OrtoolHumanMatcher:
         dropped_demand = curr_match_score.sum()
         min_dropped_demand = best_match_score.sum()
         demand_result = [total_demand, dropped_demand, min_dropped_demand]
-        return human_in_team, z_sol, demand_result
+        flag_success = True
+        return flag_success, human_in_team, z_sol, demand_result
