@@ -23,6 +23,8 @@ class ResultEvaluator:
                 for i in range(place_num):
                     penalty_mat[k, i] = (z_sol[:, k] * human_demand_bool[:, i]).sum()
             demand_obj = ((1-y_sol) * penalty_mat).sum()
+            # for k in range(self.veh_num):
+            #     print(k, np.nonzero(penalty_mat[k]))
 
         result_max_time = 0.0
         node_visit = np.zeros(self.node_num, dtype=int)

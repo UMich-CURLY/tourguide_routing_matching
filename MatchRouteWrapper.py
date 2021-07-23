@@ -6,14 +6,18 @@ from ResultEvaluator import ResultEvaluator
 class MatchRouteWrapper:
     def __init__(self, veh_num, node_num, human_choice, human_num, max_human_in_team, demand_penalty, time_penalty, time_limit):
         '''
-        veh_num: int, the agent number
-        node_num: int, the number of nodes, it is assumed that the depot 
-        human_choice: int, the maximum number of place
-        human_num: int
-        max_human_in_team: int -> (veh_num, )
-        demand_penalty: float
-        time_penalty: float
-        time_limit: float
+        veh_num:            int, the agent number
+        node_num:           int, the number of nodes,
+                            it is assumed that 0 to node_num - 3 are point of interests,
+                            node_num - 2 is the start,
+                            node_num - 1 is the terminal,
+                            and start and terminal are at the same location in the world
+        human_choice:       int, the maximum number of places that a human want to visit
+        human_num:          int, the number of humans
+        max_human_in_team:  int array of (veh_num, )
+        demand_penalty:     float, default 1000.0
+        time_penalty:       float, defalt 1.0
+        time_limit:         float, default 500
         '''
         self.veh_num = veh_num
         self.node_num = node_num
@@ -33,6 +37,14 @@ class MatchRouteWrapper:
         self.evaluator = ResultEvaluator(veh_num, node_num, human_num, demand_penalty, time_penalty)
 
     def initialize_human_demand(self, human_demand_int = None):
+        '''
+        Inputs:
+        human_demand_int: Let it be None
+        ------------------------------------------------------
+        Output:
+        human_demand_bool: bool array of (human_num, place_num) indicating whether a human want to goto a place
+        human_demand_int_unique: list of size (human_num, ), each list element is a int array indicating the place id that that human want to visit
+        '''
         if human_demand_int is None:
             human_demand_int = np.random.randint(0, self.place_num, (self.human_num,self.human_choice) )
         temp_index = np.arange(self.human_num).reshape(-1,1).repeat(self.human_choice,axis=1)
@@ -45,8 +57,21 @@ class MatchRouteWrapper:
 
     def initialize_plan(self, edge_time, node_time, flag_initialize = 0):
         '''
-        flag_initialize: 0 means initialize the routes for the vehicles by solving a routing problem
-                         1 means initialize the routes randomly
+        Inputs:
+        edge_time:          float array of (veh_num, node_num, node_num)
+        node_time:          float array of (veh_num, node_num)
+        flag_initialize:    0 means initialize the routes for the vehicles by solving a routing problem
+                            1 means initialize the routes randomly
+        ------------------------------------------------------
+        Outputs:
+        route_list:         list of size (veh_num, ), each element is a list of nodes
+                            ignore the route_list[i][0] and route_list[i][-1], they are start and terminal nodes
+                            example: [[10, 5, 0, 6, 10], [10, 3, 4, 5, 10], [10, 3, 4, 7, 10], [10, 3, 4, 6, 0, 10]]
+        route_time_list:    list of size (veh_num, ), each element is a list of time
+                            example: [[0, 89, 185, 277, 386], [0, 104, 161, 344, 433], [0, 104, 161, 205, 351], [0, 104, 161, 313, 405, 468]]
+        team_list:          list of size (node_num-2, ), each element is a list of vehicle id that visit that node
+                            example: [[0, 3], [], [], [1, 2, 3], [1, 2, 3], [0, 1], [0, 3], [2], [], []]
+        y_sol:              bool array of (veh_num, node_num-2), y_sol[k, i] means whether a vehicle visits node i
         '''
         # Initialize an routing plan
         self.flag_initialize = flag_initialize
@@ -59,7 +84,36 @@ class MatchRouteWrapper:
         return route_list, route_time_list, team_list, y_sol
 
 
-    def generate_plan(self, edge_time, node_time, human_demand_bool, route_list_initial, y_sol_inital, node_seq, max_iter):
+    def generate_plan(self, edge_time, node_time, human_demand_bool, route_list_initial, y_sol_inital, node_seq = None, max_iter = 10):
+        '''
+        Inputs:
+        edge_time:          float array of (veh_num, node_num, node_num)
+        node_time:          float array of (veh_num, node_num)
+        human_demand_bool:  bool array of (human_num, place_num) indicating whether a human want to goto a place
+        route_list_initial: an initial guess of route_list from function initialize_plan()
+        y_sol_inital:       an initial guess of y_sol from function initialize_plan()
+        node_seq:           a sequence constraint, if no such constraints, let it be None
+                            example [[0,1,2], [3,4]] means if a human want to visit 1, he/she must visit 0 first,
+                                                           if a human want to visit 2, he/she must visit 1 first;
+                                          apart from that, if a human want to visit 4, he/she must visit 3 first
+        max_iter:           the maximum number of iteration for the optimization algorithm, set to 10 by default
+        ------------------------------------------------------
+        Outputs:
+        flag_success:       bool, whether the optimization is successful
+        route_list:         list of size (veh_num, ), each element is a list of nodes
+                            ignore the route_list[i][0] and route_list[i][-1], they are start and terminal nodes
+                            example: [[10, 5, 0, 6, 10], [10, 3, 4, 5, 10], [10, 3, 4, 7, 10], [10, 3, 4, 6, 0, 10]]
+        route_time_list:    list of size (veh_num, ), each element is a list of time
+                            example: [[0, 89, 185, 277, 386], [0, 104, 161, 344, 433], [0, 104, 161, 205, 351], [0, 104, 161, 313, 405, 468]]
+        team_list:          list of size (node_num-2, ), each element is a list of vehicle id that visit that node
+                            example: [[0, 3], [], [], [1, 2, 3], [1, 2, 3], [0, 1], [0, 3], [2], [], []]
+        human_in_team:      int list of size (human_num), each elements indicate which vehicle that human follows 
+        y_sol:              bool array of (veh_num, node_num-2), y_sol[k, i] means whether vehicle[k] visits node[i]
+        z_sol:              bool array of (human_num, veh_num), z_sol[l, k] means whether human[l] follows vehicle[k]
+        sum_obj_list:       float array of (max_iter, ), each element is the objective function value at that iteration
+        demand_obj_list:    float array of (max_iter, ), each element is the number of dropped demand at that iteration
+        result_max_time_list: float array of (max_iter, ), each element is the time usage of the whole guidance mission at that iteration
+        '''
         y_sol = y_sol_inital + 0
         route_list = route_list_initial # Shallow copy
         sum_obj_list = np.empty(2*max_iter, dtype=np.float64)
