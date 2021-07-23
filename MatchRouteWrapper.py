@@ -4,7 +4,7 @@ from OrtoolHumanMatcher import OrtoolHumanMatcher
 from ResultEvaluator import ResultEvaluator
 
 class MatchRouteWrapper:
-    def __init__(self, veh_num, node_num, human_choice, human_num, max_human_in_team, demand_penalty, time_penalty, time_limit):
+    def __init__(self, veh_num, node_num, human_choice, human_num, max_human_in_team, demand_penalty, time_penalty, time_limit, flag_verbose = True):
         '''
         veh_num:            int, the agent number
         node_num:           int, the number of nodes,
@@ -28,7 +28,7 @@ class MatchRouteWrapper:
         self.demand_penalty = demand_penalty
         self.time_penalty = time_penalty
         self.time_limit = time_limit
-        self.flag_verbose = True
+        self.flag_verbose = flag_verbose
 
         self.flag_initialize = 0
 

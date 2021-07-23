@@ -5,7 +5,7 @@ from scipy.spatial.distance import squareform, pdist
 from ResultVisualizer import ResultVisualizer
 from MatchRouteWrapper import MatchRouteWrapper
 
-flag_verbose = False
+flag_verbose = True
 flag_show_plot = True
 folder_name = './temp/'
 
@@ -39,7 +39,7 @@ place_num = node_num - 2
 # node_seq = None
 node_seq = [[0,1,2], [3,4]]
 
-global_planner = MatchRouteWrapper(veh_num, node_num, human_choice, human_num, max_human_in_team, demand_penalty, time_penalty, time_limit)
+global_planner = MatchRouteWrapper(veh_num, node_num, human_choice, human_num, max_human_in_team, demand_penalty, time_penalty, time_limit, flag_verbose)
 
 if flag_read_testcase:
     data_dict = helper.load_dict(testcase_file)
