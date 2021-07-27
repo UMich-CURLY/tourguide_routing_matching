@@ -14,6 +14,7 @@ flag_read_testcase = True
 flag_save_testcase = False
 testcase_file = './testcase/case.dat'
 flag_initialize = 0 # 0: VRP, 1: random
+flag_uncertainty = True
 
 # veh_num = 10
 # node_num = 50
@@ -62,6 +63,12 @@ veh_speed = np.ones(veh_num, dtype=np.float64)
 
 edge_time = edge_dist.reshape(1,node_num,node_num) / veh_speed.reshape(veh_num,1,1)
 node_time = np.ones((veh_num,node_num), dtype=np.float64) * 30.0
+if flag_uncertainty:
+    edge_time_std = edge_time * 0.1
+    node_time_std = node_time * 0.1
+else:
+    edge_time_std = None
+    node_time_std = None
 print('node_pose = ', node_pose)
 
 # Initialize human selections
@@ -73,7 +80,7 @@ visualizer = ResultVisualizer()
 
 # Initialize an routing plan
 flag_solver = 0 # 0 GUROBI exact solver, 1: OrTool heuristic solver
-flag_success, route_list, route_time_list, team_list, human_in_team, y_sol, z_sol, sum_obj_list, demand_obj_list, result_max_time_list = global_planner.plan(edge_time, node_time, human_demand_bool, node_seq, max_iter, flag_initialize, flag_solver)
+flag_success, route_list, route_time_list, team_list, human_in_team, y_sol, z_sol, sum_obj_list, demand_obj_list, result_max_time_list = global_planner.plan(edge_time, node_time, edge_time_std, node_time_std, human_demand_bool, node_seq, max_iter, flag_initialize, flag_solver)
 print('sum_obj = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (demand_penalty, demand_obj_list[-1], time_penalty, result_max_time_list[-1], sum_obj_list[-1]))
 
 human_counts = global_planner.evaluator.count_human(human_in_team, veh_num)
