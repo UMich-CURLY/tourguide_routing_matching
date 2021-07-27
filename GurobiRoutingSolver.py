@@ -4,22 +4,30 @@ from gurobipy import GRB
 
 
 class GurobiRoutingSolver:
-    def __init__(self, veh_num, node_num, human_num, demand_penalty, time_penalty, flag_solver_type):
+    def __init__(self, veh_num, node_num, human_num, demand_penalty, time_penalty, time_limit):
         self.LARGETIME = 1000.0
         self.veh_num = veh_num
         self.node_num = node_num
         self.human_num = human_num
-        # self.demand_penalty = demand_penalty
+        self.demand_penalty = demand_penalty
         self.time_penalty = time_penalty
+        if time_limit <= 1:
+            self.time_limit = 30000
+        else:
+            self.time_limit = time_limit
 
         self.start_node = self.node_num - 2
         self.end_node = self.node_num - 1
 
         self.solver = gp.Model("Routing")
+        self.solver.Params.timeLimit = 20.0
         self.x_var = self.solver.addVars(self.veh_num, self.node_num, self.node_num, vtype=GRB.BINARY, name='x')
-        self.y_var = self.solver.addVars(self.veh_num, self.node_num-2, vtype=GRB.BINARY, name='y')
-        self.time_var = self.solver.addVars(self.veh_num, self.node_num, vtype=GRB.CONTINUOUS, name='q', lb=0.0, ub=self.LARGETIME)
-        self.max_time_var = self.solver.addVar(0.0, self.LARGETIME, 1.0, GRB.CONTINUOUS, "q_max")
+        self.y_var = self.solver.addVars(self.veh_num, self.node_num-1, vtype=GRB.BINARY, name='y')
+        self.time_var = self.solver.addVars(self.veh_num, self.node_num, vtype=GRB.CONTINUOUS, name='t', lb=0.0, ub=self.LARGETIME)
+        self.max_time_var = self.solver.addVar(0.0, self.LARGETIME, 1.0, GRB.CONTINUOUS, "t_max")
+        self.z_var = self.solver.addVars(self.human_num, self.veh_num, vtype=GRB.BINARY, name='z')
+
+        self.flag_time_lifting = True
 
     def optimize(self):
         self.solver.optimize()
@@ -32,7 +40,55 @@ class GurobiRoutingSolver:
         print('Problem solved in %f seconds' % result_dict['Runtime'])
         print('Problem solved in %d iterations' % result_dict['IterCount'])
         print('Problem solved in %d branch-and-bound nodes' % result_dict['NodeCount'])
-        return result_dict
+        flag_success = (result_dict['Status'] == 2) or (result_dict['Status'] >= 7) # https://www.gurobi.com/documentation/9.1/refman/optimization_status_codes.html
+        return flag_success, result_dict
+
+    def set_bilinear_model(self, edge_time, node_time, human_demand_bool, max_human_in_team):
+        obj = 0.0
+        if self.flag_time_lifting:
+            for k in range(self.veh_num):
+                for i in range(self.node_num-1):
+                    obj += self.time_penalty * node_time[k, i] * self.y_var[k, i]
+                    for j in range(self.node_num):
+                        obj += self.time_penalty * edge_time[k, i, j] * self.x_var[k, i, j]
+        else:
+            for k in range(self.veh_num):
+                obj += self.time_penalty * self.time_var[k, self.end_node]
+        for l in range(self.human_num):
+            for k in range(self.veh_num):
+                for i in range(self.node_num-2):
+                    obj += self.demand_penalty * human_demand_bool[l, i] * self.z_var[l, k] * (1.0 - self.y_var[k, i])
+        self.solver.setObjective(obj, GRB.MINIMIZE)
+
+        # Human assignment constraints
+        for l in range(self.human_num):
+            constr = 0
+            for k in range(self.veh_num):
+                constr += self.z_var[l, k]
+            constr_name = 'human_assign[' + str(l) + ',' + str(k) + ']'
+            self.solver.addConstr(constr == 1, constr_name)
+        # Team size limit constraints
+        for k in range(self.veh_num):
+            constr = 0
+            for l in range(self.human_num):
+                constr += self.z_var[l, k]
+            constr_name = 'max_human[' + str(l) + ',' + str(k) + ']'
+            self.solver.addConstr(constr <= max_human_in_team[k], constr_name)
+        # Time limit constraints
+        if self.flag_time_lifting:
+            for k in range(self.veh_num):
+                constr = 0
+                for i in range(self.node_num-1):
+                    constr += node_time[k, i] * self.y_var[k, i]
+                    for j in range(self.node_num):
+                        constr += edge_time[k, i, j] * self.x_var[k, i, j]
+                constr_name = 'time_limit[' + str(k) + ']'
+                self.solver.addConstr(constr <= self.time_limit, constr_name)
+        else:
+            for k in range(self.veh_num):
+                constr = self.time_var[k, self.end_node]
+                constr_name = 'time_limit[' + str(k) + ']'
+                self.solver.addConstr(constr <= self.time_limit, constr_name)
 
     def set_objective(self):
         obj = self.time_penalty * self.max_time_var
@@ -89,11 +145,11 @@ class GurobiRoutingSolver:
             constr1 = 0
             for j in range(self.node_num):
                 constr1 += self.x_var[k,self.start_node,j]
-            for i in range(self.node_num-2):
-                # Variable Relationship Constraint: Incoming edges == y
+            for i in range(self.node_num-1):
+                # Variable Relationship Constraint: Outgoing edges == y
                 constr = 0
                 for j in range(self.node_num):
-                    constr += self.x_var[k,j,i]
+                    constr += self.x_var[k,i,j]
                 constr_name = 'task[' + str(k) + ',' + str(i) + ']'
                 self.solver.addConstr(constr == self.y_var[k,i], constr_name)
                 # Flow Constraint: Incoming edge <= outgoing edge from start (redundant but useful for solver)
@@ -102,6 +158,9 @@ class GurobiRoutingSolver:
         
         # Time constraint
         for k in range(self.veh_num):
+            # Start time is zero
+            constr_name = 'start_time[' + str(k) + ']'
+            self.solver.addConstr(self.time_var[k,self.start_node] == 0, constr_name)
             for i in range(self.node_num):
                 for j in range(self.node_num):
                     constr = self.time_var[k,i] - self.time_var[k,j] + edge_time[k,i,j] + node_time[k,i] - self.LARGETIME * (1 - self.x_var[k,i,j])
@@ -120,7 +179,7 @@ class GurobiRoutingSolver:
         # Energy constraint
         # Placeholder
 
-    def get_plan(self):
+    def get_plan(self, flag_bilinear = False):
         time_mat = np.zeros((self.veh_num, self.node_num), dtype=np.float64)
         for k in range(self.veh_num):
             for i in range(self.node_num):
@@ -166,6 +225,15 @@ class GurobiRoutingSolver:
             for k in team_list[i]:
                 y_sol[k,i] = 1.0
 
-        # print(time_mat)
-        return route_node_list, route_time_list, team_list, y_sol
-
+        # print('route_time_list = ', route_time_list)
+        if not flag_bilinear:
+            return route_node_list, route_time_list, team_list, y_sol
+        
+        z_sol = np.zeros((self.human_num, self.veh_num), dtype=np.float64)
+        human_in_team = np.empty((self.human_num), dtype=int)
+        for l in range(self.human_num):
+            for k in range(self.veh_num):
+                if self.z_var[l, k].x > 0.5:
+                    z_sol[l, k] = 1.0
+                    human_in_team[l] = k
+        return route_node_list, route_time_list, team_list, y_sol, human_in_team, z_sol
