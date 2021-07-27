@@ -54,15 +54,24 @@ class MatchRouteWrapper:
             human_demand_int_unique.append(np.unique(human_demand_int[l]))
         return human_demand_bool, human_demand_int_unique
 
-    # def plan(self, edge_time, node_time, human_demand_bool, route_list_initial, y_sol_inital, node_seq = None, max_iter = 10, flag_initialize = 0):
-    #     if flag_solver == 0:
-    #         # Exact solver using GUROBI
+    def plan(self, edge_time, node_time, human_demand_bool, node_seq = None, max_iter = 10, flag_initialize = 0, flag_solver = 1):
+        if flag_solver == 1:
+            # Heuristic solver using Ortool
+            route_list, route_time_list, team_list, y_sol = self.initialize_plan(edge_time, node_time, flag_initialize)
+            flag_success, route_list, route_time_list, team_list, human_in_team, y_sol, z_sol, sum_obj_list, demand_obj_list, result_max_time_list = self.generate_plan(edge_time, node_time, human_demand_bool, route_list, y_sol, node_seq, max_iter)
+        else:
+            # Exact solver using GUROBI
+            routing_solver = GurobiRoutingSolver(self.veh_num, self.node_num, self.human_num, self.demand_penalty, self.time_penalty, self.time_limit)
+            routing_solver.set_model(edge_time, node_time)
+            routing_solver.set_bilinear_model(edge_time, node_time, human_demand_bool, self.max_human_in_team)
+            flag_success, result_dict = routing_solver.optimize()
+            route_list, route_time_list, team_list, y_sol, human_in_team, z_sol = routing_solver.get_plan(True)
+            sum_obj, demand_obj, result_max_time, node_visit = self.evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
 
-    #     else:
-    #         # Heuristic solver using Ortool
-    #         route_list, route_time_list, team_list, y_sol = self.initialize_plan(edge_time, node_time, flag_initialize)
-    #         flag_success, route_list, route_time_list, team_list, human_in_team, y_sol, z_sol, sum_obj_list, demand_obj_list, result_max_time_list = self.generate_plan(edge_time, node_time, human_demand_bool, route_list, y_sol, node_seq, max_iter)
-    #     return flag_success, route_list, route_time_list, team_list, human_in_team, y_sol, z_sol, sum_obj_list, demand_obj_list, result_max_time_list
+            sum_obj_list = np.ones(2*max_iter, dtype=np.float64) * sum_obj
+            demand_obj_list = np.ones(2*max_iter, dtype=np.float64) * demand_obj
+            result_max_time_list = np.ones(2*max_iter, dtype=np.float64) * result_max_time
+        return flag_success, route_list, route_time_list, team_list, human_in_team, y_sol, z_sol, sum_obj_list, demand_obj_list, result_max_time_list
 
     def initialize_plan(self, edge_time, node_time, flag_initialize = 0):
         '''
