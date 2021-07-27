@@ -5,7 +5,7 @@ from ResultEvaluator import ResultEvaluator
 from GurobiRoutingSolver import GurobiRoutingSolver
 
 class MatchRouteWrapper:
-    def __init__(self, veh_num, node_num, human_choice, human_num, max_human_in_team, demand_penalty, time_penalty, time_limit, flag_verbose = True):
+    def __init__(self, veh_num, node_num, human_choice, human_num, max_human_in_team, demand_penalty, time_penalty, time_limit, solver_time_limit, beta, flag_verbose = True):
         '''
         veh_num:            int, the agent number
         node_num:           int, the number of nodes,
@@ -35,6 +35,9 @@ class MatchRouteWrapper:
 
         self.evaluator = ResultEvaluator(veh_num, node_num, human_num, demand_penalty, time_penalty)
 
+        self.solver_time_limit = solver_time_limit
+        self.beta = beta
+
     def initialize_human_demand(self, human_demand_int = None):
         '''
         Inputs:
@@ -61,7 +64,7 @@ class MatchRouteWrapper:
             flag_success, route_list, route_time_list, team_list, human_in_team, y_sol, z_sol, sum_obj_list, demand_obj_list, result_max_time_list = self.generate_plan(edge_time, node_time, human_demand_bool, route_list, y_sol, node_seq, max_iter)
         else:
             # Exact solver using GUROBI
-            routing_solver = GurobiRoutingSolver(self.veh_num, self.node_num, self.human_num, self.demand_penalty, self.time_penalty, self.time_limit)
+            routing_solver = GurobiRoutingSolver(self.veh_num, self.node_num, self.human_num, self.demand_penalty, self.time_penalty, self.time_limit, self.solver_time_limit, self.beta)
             routing_solver.set_model(edge_time, node_time)
             routing_solver.set_bilinear_model(edge_time, node_time, edge_time_std, node_time_std, human_demand_bool, self.max_human_in_team, node_seq)
             flag_success, result_dict = routing_solver.optimize()

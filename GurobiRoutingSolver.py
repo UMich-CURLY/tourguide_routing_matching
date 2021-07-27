@@ -5,7 +5,7 @@ from gurobipy import GRB
 
 
 class GurobiRoutingSolver:
-    def __init__(self, veh_num, node_num, human_num, demand_penalty, time_penalty, time_limit):
+    def __init__(self, veh_num, node_num, human_num, demand_penalty, time_penalty, time_limit, solver_time_limit = 20.0, beta = 0.8):
         self.LARGETIME = 1000.0
         self.veh_num = veh_num
         self.node_num = node_num
@@ -21,7 +21,7 @@ class GurobiRoutingSolver:
         self.end_node = self.node_num - 1
 
         self.solver = gp.Model("Routing")
-        self.solver.Params.timeLimit = 100.0
+        self.solver.Params.timeLimit = solver_time_limit
         self.x_var = self.solver.addVars(self.veh_num, self.node_num, self.node_num, vtype=GRB.BINARY, name='x')
         self.y_var = self.solver.addVars(self.veh_num, self.node_num-1, vtype=GRB.BINARY, name='y')
         self.time_var = self.solver.addVars(self.veh_num, self.node_num, vtype=GRB.CONTINUOUS, name='t', lb=0.0, ub=self.LARGETIME)
@@ -32,7 +32,7 @@ class GurobiRoutingSolver:
 
         self.flag_time_lifting = True
         self.sample_num = 100
-        self.beta = 0.8
+        self.beta = beta
 
     def optimize(self):
         self.solver.optimize()

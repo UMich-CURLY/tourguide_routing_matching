@@ -4,7 +4,6 @@ import helper
 from scipy.spatial.distance import squareform, pdist
 from ResultVisualizer import ResultVisualizer
 from MatchRouteWrapper import MatchRouteWrapper
-from GurobiRoutingSolver import GurobiRoutingSolver
 
 flag_verbose = True
 flag_show_plot = True
@@ -14,7 +13,10 @@ flag_read_testcase = True
 flag_save_testcase = False
 testcase_file = './testcase/case.dat'
 flag_initialize = 0 # 0: VRP, 1: random
+flag_solver = 0 # 0 GUROBI exact solver, 1: OrTool heuristic solver
+solver_time_limit = 100.0
 flag_uncertainty = True
+beta = 0.8
 
 # veh_num = 10
 # node_num = 50
@@ -41,7 +43,7 @@ place_num = node_num - 2
 # node_seq = None
 node_seq = [[0,1,2], [3,4]]
 
-global_planner = MatchRouteWrapper(veh_num, node_num, human_choice, human_num, max_human_in_team, demand_penalty, time_penalty, time_limit, flag_verbose)
+global_planner = MatchRouteWrapper(veh_num, node_num, human_choice, human_num, max_human_in_team, demand_penalty, time_penalty, time_limit, solver_time_limit, beta, flag_verbose)
 
 if flag_read_testcase:
     data_dict = helper.load_dict(testcase_file)
@@ -79,7 +81,6 @@ print('human_demand_int_unique = \n', human_demand_int_unique)
 visualizer = ResultVisualizer()
 
 # Initialize an routing plan
-flag_solver = 0 # 0 GUROBI exact solver, 1: OrTool heuristic solver
 flag_success, route_list, route_time_list, team_list, human_in_team, y_sol, z_sol, sum_obj_list, demand_obj_list, result_max_time_list = global_planner.plan(edge_time, node_time, edge_time_std, node_time_std, human_demand_bool, node_seq, max_iter, flag_initialize, flag_solver)
 print('sum_obj = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (demand_penalty, demand_obj_list[-1], time_penalty, result_max_time_list[-1], sum_obj_list[-1]))
 
