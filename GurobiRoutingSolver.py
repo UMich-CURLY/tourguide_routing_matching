@@ -61,6 +61,12 @@ class GurobiRoutingSolver:
                     obj += self.demand_penalty * human_demand_bool[l, i] * self.z_var[l, k] * (1.0 - self.y_var[k, i])
         self.solver.setObjective(obj, GRB.MINIMIZE)
 
+        self.set_bilinear_constraint(edge_time, node_time, max_human_in_team)
+        # Sequence constraints
+        if node_seq is not None:
+            self.add_seq_constraint(node_seq)
+
+    def set_bilinear_constraint(self, edge_time, node_time, max_human_in_team):
         # Human assignment constraints
         for l in range(self.human_num):
             constr = 0
@@ -90,16 +96,12 @@ class GurobiRoutingSolver:
                 constr = self.time_var[k, self.end_node]
                 constr_name = 'time_limit[' + str(k) + ']'
                 self.solver.addConstr(constr <= self.time_limit, constr_name)
-        # Sequence constraints
-        if node_seq is not None:
-            self.add_seq_constraint(node_seq)
 
     def add_seq_constraint(self, node_seq):
         for i_seq in range(len(node_seq)):
             for i_node in range(len(node_seq[i_seq]) - 1):
                 node_i = node_seq[i_seq][i_node]
                 node_j = node_seq[i_seq][i_node+1]
-                print('node i j', node_i, node_j)
                 for k in range(self.veh_num):
                     constr_name = 'seq_depend[' + str(k) + ',' + str(node_i) + ',' + str(node_j) + ']'
                     self.solver.addConstr(self.y_var[k, node_i] >= self.y_var[k, node_j], constr_name)
