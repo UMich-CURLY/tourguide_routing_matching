@@ -18,7 +18,7 @@ class OrtoolRoutingSolver:
             self.time_limit = int(time_limit)
 
         self.start_node = self.node_num - 2
-        self.global_penalty = 1000.0
+        self.global_penalty = 1.0
 
     def optimize_sub(self, edge_time, node_time, z_sol, human_demand_bool, node_seq, route_list = None, flag_verbose = False):
         '''
@@ -79,7 +79,8 @@ class OrtoolRoutingSolver:
 
             # Allow to drop nodes.
             for i in range(place_num):
-                temp_penalty = int(penalty_mat[k, i] * self.demand_penalty)
+                # temp_penalty = int(penalty_mat[k, i] * self.demand_penalty)
+                temp_penalty = int(penalty_mat[k, i] * self.demand_penalty * self.global_penalty)
                 self.sub_solver[k].AddDisjunction([self.sub_manager[k].NodeToIndex(i)], temp_penalty)
 
             if node_seq is not None:
