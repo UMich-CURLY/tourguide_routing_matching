@@ -2,6 +2,7 @@ import numpy as np
 from OrtoolRoutingSolver import OrtoolRoutingSolver
 from OrtoolHumanMatcher import OrtoolHumanMatcher
 from ResultEvaluator import ResultEvaluator
+from GurobiRoutingSolver import GurobiRoutingSolver
 
 class MatchRouteWrapper:
     def __init__(self, veh_num, node_num, human_choice, human_num, max_human_in_team, demand_penalty, time_penalty, time_limit, flag_verbose = True):
@@ -32,8 +33,6 @@ class MatchRouteWrapper:
 
         self.flag_initialize = 0
 
-        self.routing_solver = OrtoolRoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, time_limit)
-        self.human_matcher = OrtoolHumanMatcher(human_num, veh_num, max_human_in_team)
         self.evaluator = ResultEvaluator(veh_num, node_num, human_num, demand_penalty, time_penalty)
 
     def initialize_human_demand(self, human_demand_int = None):
@@ -55,6 +54,16 @@ class MatchRouteWrapper:
             human_demand_int_unique.append(np.unique(human_demand_int[l]))
         return human_demand_bool, human_demand_int_unique
 
+    # def plan(self, edge_time, node_time, human_demand_bool, route_list_initial, y_sol_inital, node_seq = None, max_iter = 10, flag_initialize = 0):
+    #     if flag_solver == 0:
+    #         # Exact solver using GUROBI
+
+    #     else:
+    #         # Heuristic solver using Ortool
+    #         route_list, route_time_list, team_list, y_sol = self.initialize_plan(edge_time, node_time, flag_initialize)
+    #         flag_success, route_list, route_time_list, team_list, human_in_team, y_sol, z_sol, sum_obj_list, demand_obj_list, result_max_time_list = self.generate_plan(edge_time, node_time, human_demand_bool, route_list, y_sol, node_seq, max_iter)
+    #     return flag_success, route_list, route_time_list, team_list, human_in_team, y_sol, z_sol, sum_obj_list, demand_obj_list, result_max_time_list
+
     def initialize_plan(self, edge_time, node_time, flag_initialize = 0):
         '''
         Inputs:
@@ -74,13 +83,14 @@ class MatchRouteWrapper:
         y_sol:              bool array of (veh_num, node_num-2), y_sol[k, i] means whether a vehicle visits node i
         '''
         # Initialize an routing plan
+        routing_solver = OrtoolRoutingSolver(self.veh_num, self.node_num, self.human_num, self.demand_penalty, self.time_penalty, self.time_limit)
         self.flag_initialize = flag_initialize
         if flag_initialize == 0:
-            self.routing_solver.set_model(edge_time, node_time)
-            self.routing_solver.optimize()
-            route_list, route_time_list, team_list, y_sol = self.routing_solver.get_plan()
+            routing_solver.set_model(edge_time, node_time)
+            routing_solver.optimize()
+            route_list, route_time_list, team_list, y_sol = routing_solver.get_plan()
         else:
-            route_list, route_time_list, team_list, y_sol = self.routing_solver.get_random_plan(edge_time, node_time)
+            route_list, route_time_list, team_list, y_sol = routing_solver.get_random_plan(edge_time, node_time)
         return route_list, route_time_list, team_list, y_sol
 
 
@@ -119,14 +129,16 @@ class MatchRouteWrapper:
         sum_obj_list = np.empty(2*max_iter, dtype=np.float64)
         demand_obj_list = np.empty(2*max_iter, dtype=np.float64)
         result_max_time_list = np.empty(2*max_iter, dtype=np.float64)
+        routing_solver = OrtoolRoutingSolver(self.veh_num, self.node_num, self.human_num, self.demand_penalty, self.time_penalty, self.time_limit)
+        human_matcher = OrtoolHumanMatcher(self.human_num, self.veh_num, self.max_human_in_team)
 
         z_sol = None
         if self.flag_verbose:
             sum_obj, demand_obj, result_max_time, node_visit = self.evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
             print('sum_obj = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (self.demand_penalty, demand_obj, self.time_penalty, result_max_time, sum_obj))
         for i_iter in range(max_iter):
-            # self.human_matcher = OrtoolHumanMatcher(self.human_num, self.veh_num, self.max_human_in_team)
-            temp_flag_success, human_in_team, z_sol, demand_result = self.human_matcher.optimize(human_demand_bool, y_sol)
+            # human_matcher = OrtoolHumanMatcher(self.human_num, self.veh_num, self.max_human_in_team)
+            temp_flag_success, human_in_team, z_sol, demand_result = human_matcher.optimize(human_demand_bool, y_sol)
             if not temp_flag_success:
                 break
             sum_obj, demand_obj, result_max_time, node_visit = self.evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
@@ -139,10 +151,10 @@ class MatchRouteWrapper:
             if (self.flag_initialize != 0) and (i_iter == 0):
                 # if i_iter == 0:
                 route_list = None
-            temp_flag_success, result_dict = self.routing_solver.optimize_sub(edge_time, node_time, z_sol, human_demand_bool, node_seq, route_list)
+            temp_flag_success, result_dict = routing_solver.optimize_sub(edge_time, node_time, z_sol, human_demand_bool, node_seq, route_list)
             if not temp_flag_success:
                 break
-            route_list, route_time_list, team_list, y_sol = self.routing_solver.get_plan(flag_sub_solver=True)
+            route_list, route_time_list, team_list, y_sol = routing_solver.get_plan(flag_sub_solver=True)
             sum_obj, demand_obj, result_max_time, node_visit = self.evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
             if self.flag_verbose:
                 print('sum_obj2 = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (self.demand_penalty, demand_obj, self.time_penalty, result_max_time, sum_obj))
