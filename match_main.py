@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import helper
 from scipy.spatial.distance import squareform, pdist
-from GurobiRoutingSolver import GurobiRoutingSolver
 from OrtoolRoutingSolver import OrtoolRoutingSolver
 from ResultVisualizer import ResultVisualizer
 from ResultEvaluator import ResultEvaluator
