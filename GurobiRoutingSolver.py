@@ -21,14 +21,18 @@ class GurobiRoutingSolver:
         self.end_node = self.node_num - 1
 
         self.solver = gp.Model("Routing")
-        self.solver.Params.timeLimit = 20.0
+        self.solver.Params.timeLimit = 100.0
         self.x_var = self.solver.addVars(self.veh_num, self.node_num, self.node_num, vtype=GRB.BINARY, name='x')
         self.y_var = self.solver.addVars(self.veh_num, self.node_num-1, vtype=GRB.BINARY, name='y')
         self.time_var = self.solver.addVars(self.veh_num, self.node_num, vtype=GRB.CONTINUOUS, name='t', lb=0.0, ub=self.LARGETIME)
         self.max_time_var = self.solver.addVar(0.0, self.LARGETIME, 1.0, GRB.CONTINUOUS, "t_max")
         self.z_var = self.solver.addVars(self.human_num, self.veh_num, vtype=GRB.BINARY, name='z')
+        self.alpha_var = None
+        self.w_var = None
 
         self.flag_time_lifting = True
+        self.sample_num = 100
+        self.beta = 0.8
 
     def optimize(self):
         self.solver.optimize()
@@ -44,17 +48,31 @@ class GurobiRoutingSolver:
         flag_success = (result_dict['Status'] == 2) or (result_dict['Status'] >= 7) # https://www.gurobi.com/documentation/9.1/refman/optimization_status_codes.html
         return flag_success, result_dict
 
-    def set_bilinear_model(self, edge_time, node_time, human_demand_bool, max_human_in_team, node_seq):
+    def set_bilinear_model(self, edge_time, node_time, edge_time_std, node_time_std, human_demand_bool, max_human_in_team, node_seq):
         obj = 0.0
-        if self.flag_time_lifting:
+        flag_uncertainty = (edge_time_std is not None) and (node_time_std is not None)
+        # Objective function: time part
+        if flag_uncertainty:
+            assert edge_time.shape == edge_time_std.shape, 'edge_time.shape == edge_time_std.shape not satisfied'
+            assert node_time.shape == node_time_std.shape, 'node_time.shape == node_time_std.shape not satisfied'
+            self.alpha_var = self.solver.addVars(self.veh_num, vtype=GRB.CONTINUOUS, name='alpha', lb=0.0, ub=self.LARGETIME)
+            self.w_var = self.solver.addVars(self.veh_num, self.sample_num, vtype=GRB.CONTINUOUS, name='w', lb=0.0, ub=self.LARGETIME)
+            temp_coeff = 1.0 / (self.sample_num * (1 - self.beta))
             for k in range(self.veh_num):
-                for i in range(self.node_num-1):
-                    obj += self.time_penalty * node_time[k, i] * self.y_var[k, i]
-                    for j in range(self.node_num):
-                        obj += self.time_penalty * edge_time[k, i, j] * self.x_var[k, i, j]
+                obj += self.time_penalty * self.alpha_var[k]
+                for i_sample in range(self.sample_num):
+                    obj += self.time_penalty * temp_coeff * self.w_var[k, i_sample]
         else:
-            for k in range(self.veh_num):
-                obj += self.time_penalty * self.time_var[k, self.end_node]
+            if self.flag_time_lifting:
+                for k in range(self.veh_num):
+                    for i in range(self.node_num-1):
+                        obj += self.time_penalty * node_time[k, i] * self.y_var[k, i]
+                        for j in range(self.node_num):
+                            obj += self.time_penalty * edge_time[k, i, j] * self.x_var[k, i, j]
+            else:
+                for k in range(self.veh_num):
+                    obj += self.time_penalty * self.time_var[k, self.end_node]
+        # Objective function: demand part
         for l in range(self.human_num):
             for k in range(self.veh_num):
                 for i in range(self.node_num-2):
@@ -65,6 +83,23 @@ class GurobiRoutingSolver:
         # Sequence constraints
         if node_seq is not None:
             self.add_seq_constraint(node_seq)
+        if flag_uncertainty:
+            self.set_cvar_constraint(edge_time, node_time, edge_time_std, node_time_std)
+
+    def set_cvar_constraint(self, edge_time, node_time, edge_time_std, node_time_std):
+        for i_sample in range(self.sample_num):
+            temp_edge_time = edge_time + np.random.randn(*edge_time.shape) * edge_time_std
+            temp_node_time = node_time + np.random.randn(*node_time.shape) * node_time_std
+            temp_edge_time[temp_edge_time < 0] = 0
+            temp_node_time[temp_node_time < 0] = 0
+            for k in range(self.veh_num):
+                constr = - self.alpha_var[k]
+                for i in range(self.node_num-1):
+                    constr += temp_node_time[k, i] * self.y_var[k, i]
+                    for j in range(self.node_num):
+                        constr += temp_edge_time[k, i, j] * self.x_var[k, i, j]
+                constr_name = 'cvar[' + str(k) + ',' + str(i_sample) + ']'
+                self.solver.addConstr(self.w_var[k, i_sample] >= constr, constr_name)
 
     def set_bilinear_constraint(self, edge_time, node_time, max_human_in_team):
         # Human assignment constraints
@@ -254,4 +289,9 @@ class GurobiRoutingSolver:
                 if self.z_var[l, k].x > 0.5:
                     z_sol[l, k] = 1.0
                     human_in_team[l] = k
+        if self.alpha_var is not None:
+            alpha_sol = np.zeros(self.veh_num, dtype=np.float64)
+            for k in range(self.veh_num):
+                alpha_sol[k] = self.alpha_var[k].x
+            print('alpha_sol = ', alpha_sol)
         return route_node_list, route_time_list, team_list, y_sol, human_in_team, z_sol
