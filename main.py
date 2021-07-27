@@ -12,6 +12,7 @@ demand_penalty = 10.0
 time_penalty = 1.0
 time_limit = 0
 folder_name = './temp/initial_'
+node_seq = [[0,1,2], [3,4]]
 
 # node_pose = np.array( [[ 9.84212669 ,  1.80265101],
 #  [13.03963515 , 16.09854408],
@@ -54,6 +55,7 @@ routing_solver = GurobiRoutingSolver(veh_num, node_num, human_num, demand_penalt
 routing_solver.set_model(edge_time, node_time)
 routing_solver.set_all_task_complete()
 routing_solver.set_objective()
+# routing_solver.add_seq_constraint(node_seq)
 routing_solver.optimize()
 route_list, route_time_list, team_list, y_sol = routing_solver.get_plan()
 visualizer.print_results(route_list, route_time_list, team_list)

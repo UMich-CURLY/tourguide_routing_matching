@@ -1,3 +1,4 @@
+from typing import Sequence
 import numpy as np
 import gurobipy as gp
 from gurobipy import GRB
@@ -43,7 +44,7 @@ class GurobiRoutingSolver:
         flag_success = (result_dict['Status'] == 2) or (result_dict['Status'] >= 7) # https://www.gurobi.com/documentation/9.1/refman/optimization_status_codes.html
         return flag_success, result_dict
 
-    def set_bilinear_model(self, edge_time, node_time, human_demand_bool, max_human_in_team):
+    def set_bilinear_model(self, edge_time, node_time, human_demand_bool, max_human_in_team, node_seq):
         obj = 0.0
         if self.flag_time_lifting:
             for k in range(self.veh_num):
@@ -89,6 +90,21 @@ class GurobiRoutingSolver:
                 constr = self.time_var[k, self.end_node]
                 constr_name = 'time_limit[' + str(k) + ']'
                 self.solver.addConstr(constr <= self.time_limit, constr_name)
+        # Sequence constraints
+        if node_seq is not None:
+            self.add_seq_constraint(node_seq)
+
+    def add_seq_constraint(self, node_seq):
+        for i_seq in range(len(node_seq)):
+            for i_node in range(len(node_seq[i_seq]) - 1):
+                node_i = node_seq[i_seq][i_node]
+                node_j = node_seq[i_seq][i_node+1]
+                print('node i j', node_i, node_j)
+                for k in range(self.veh_num):
+                    constr_name = 'seq_depend[' + str(k) + ',' + str(node_i) + ',' + str(node_j) + ']'
+                    self.solver.addConstr(self.y_var[k, node_i] >= self.y_var[k, node_j], constr_name)
+                    constr_name = 'seq_time[' + str(k) + ',' + str(node_i) + ',' + str(node_j) + ']'
+                    self.solver.addConstr(self.time_var[k, node_i] <= self.time_var[k, node_j] + self.LARGETIME * (1 - self.y_var[k, node_j]), constr_name)
 
     def set_objective(self):
         obj = self.time_penalty * self.max_time_var

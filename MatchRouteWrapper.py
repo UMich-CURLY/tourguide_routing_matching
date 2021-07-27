@@ -63,7 +63,7 @@ class MatchRouteWrapper:
             # Exact solver using GUROBI
             routing_solver = GurobiRoutingSolver(self.veh_num, self.node_num, self.human_num, self.demand_penalty, self.time_penalty, self.time_limit)
             routing_solver.set_model(edge_time, node_time)
-            routing_solver.set_bilinear_model(edge_time, node_time, human_demand_bool, self.max_human_in_team)
+            routing_solver.set_bilinear_model(edge_time, node_time, human_demand_bool, self.max_human_in_team, node_seq)
             flag_success, result_dict = routing_solver.optimize()
             route_list, route_time_list, team_list, y_sol, human_in_team, z_sol = routing_solver.get_plan(True)
             sum_obj, demand_obj, result_max_time, node_visit = self.evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)

@@ -37,8 +37,8 @@ max_iter = 10
 max_human_in_team = np.ones(veh_num, dtype=int) * 3 # (human_num // veh_num + 5)
 place_num = node_num - 2
 
-node_seq = None
-# node_seq = [[0,1,2], [3,4]]
+# node_seq = None
+node_seq = [[0,1,2], [3,4]]
 
 global_planner = MatchRouteWrapper(veh_num, node_num, human_choice, human_num, max_human_in_team, demand_penalty, time_penalty, time_limit, flag_verbose)
 
@@ -72,7 +72,7 @@ print('human_demand_int_unique = \n', human_demand_int_unique)
 visualizer = ResultVisualizer()
 
 # Initialize an routing plan
-flag_solver = 1 # 0 GUROBI exact solver, 1: OrTool heuristic solver
+flag_solver = 0 # 0 GUROBI exact solver, 1: OrTool heuristic solver
 flag_success, route_list, route_time_list, team_list, human_in_team, y_sol, z_sol, sum_obj_list, demand_obj_list, result_max_time_list = global_planner.plan(edge_time, node_time, human_demand_bool, node_seq, max_iter, flag_initialize, flag_solver)
 print('sum_obj = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (demand_penalty, demand_obj_list[-1], time_penalty, result_max_time_list[-1], sum_obj_list[-1]))
 
