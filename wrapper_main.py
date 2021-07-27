@@ -71,28 +71,28 @@ print('human_demand_int_unique = \n', human_demand_int_unique)
 # Initialize the visualizer and evaluator
 visualizer = ResultVisualizer()
 
-# routing_solver = GurobiRoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, time_limit)
-# routing_solver.set_model(edge_time, node_time)
-# routing_solver.set_bilinear_model(edge_time, node_time, human_demand_bool, max_human_in_team)
-# flag_success, result_dict = routing_solver.optimize()
-# route_list, route_time_list, team_list, y_sol, human_in_team, z_sol = routing_solver.get_plan(True)
-# sum_obj, demand_obj, result_max_time, node_visit = global_planner.evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
-# print('result_max_time = ', result_max_time)
-# print('node_visit = ', node_visit)
-# sum_obj_list = np.ones(2*max_iter, dtype=np.float64) * sum_obj
-# demand_obj_list = np.ones(2*max_iter, dtype=np.float64) * demand_obj
-# result_max_time_list = np.ones(2*max_iter, dtype=np.float64) * result_max_time
+routing_solver = GurobiRoutingSolver(veh_num, node_num, human_num, demand_penalty, time_penalty, time_limit)
+routing_solver.set_model(edge_time, node_time)
+routing_solver.set_bilinear_model(edge_time, node_time, human_demand_bool, max_human_in_team)
+flag_success, result_dict = routing_solver.optimize()
+route_list, route_time_list, team_list, y_sol, human_in_team, z_sol = routing_solver.get_plan(True)
+sum_obj, demand_obj, result_max_time, node_visit = global_planner.evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
+print('result_max_time = ', result_max_time)
+print('node_visit = ', node_visit)
+sum_obj_list = np.ones(2*max_iter, dtype=np.float64) * sum_obj
+demand_obj_list = np.ones(2*max_iter, dtype=np.float64) * demand_obj
+result_max_time_list = np.ones(2*max_iter, dtype=np.float64) * result_max_time
 
-# print('sum_obj = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (demand_penalty, demand_obj, time_penalty, result_max_time, sum_obj))
+print('sum_obj = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (demand_penalty, demand_obj, time_penalty, result_max_time, sum_obj))
 
 # Initialize an routing plan
-route_list, route_time_list, team_list, y_sol = global_planner.initialize_plan(edge_time, node_time, flag_initialize)
+# route_list, route_time_list, team_list, y_sol = global_planner.initialize_plan(edge_time, node_time, flag_initialize)
 
-visualizer.print_results(route_list, route_time_list, team_list)
-if flag_show_plot:
-    visualizer.visualize_routes(node_pose, route_list)
+# visualizer.print_results(route_list, route_time_list, team_list)
+# if flag_show_plot:
+#     visualizer.visualize_routes(node_pose, route_list)
 
-flag_success, route_list, route_time_list, team_list, human_in_team, y_sol, z_sol, sum_obj_list, demand_obj_list, result_max_time_list = global_planner.generate_plan(edge_time, node_time, human_demand_bool, route_list, y_sol, node_seq, max_iter)
+# flag_success, route_list, route_time_list, team_list, human_in_team, y_sol, z_sol, sum_obj_list, demand_obj_list, result_max_time_list = global_planner.generate_plan(edge_time, node_time, human_demand_bool, route_list, y_sol, node_seq, max_iter)
 
 human_counts = global_planner.evaluator.count_human(human_in_team, veh_num)
 print('human_in_team', human_in_team)
