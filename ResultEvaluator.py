@@ -26,6 +26,7 @@ class ResultEvaluator:
             # for k in range(self.veh_num):
             #     print(k, np.nonzero(penalty_mat[k]))
 
+        result_sum_time = 0.0
         result_max_time = 0.0
         node_visit = np.zeros(self.node_num, dtype=int)
         for k in range(self.veh_num):
@@ -37,9 +38,11 @@ class ResultEvaluator:
                 node_j = route_list[k][i+1]
                 route_time += edge_time[k,node_i,node_j] + node_time[k,node_i]
                 node_visit[node_i] += 1
+            result_sum_time += route_time
             if route_time > result_max_time:
                 result_max_time = route_time
-        sum_obj = self.demand_penalty * demand_obj + self.time_penalty * result_max_time
+        # sum_obj = self.demand_penalty * demand_obj + self.time_penalty * result_max_time
+        sum_obj = self.demand_penalty * demand_obj + self.time_penalty * result_sum_time
         return sum_obj, demand_obj, result_max_time,  node_visit
 
     def count_human(self, human_in_team, veh_num):
