@@ -13,7 +13,7 @@ class GurobiRoutingSolver:
         self.demand_penalty = demand_penalty
         self.time_penalty = time_penalty
         if time_limit <= 1:
-            self.time_limit = 30000
+            self.time_limit = 300000
         else:
             self.time_limit = time_limit
 

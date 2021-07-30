@@ -5,7 +5,7 @@ from ortools.constraint_solver import pywrapcp
 import time
 
 class OrtoolRoutingSolver:
-    def __init__(self, veh_num, node_num, human_num, demand_penalty, time_penalty, time_limit):
+    def __init__(self, veh_num, node_num, human_num, demand_penalty, time_penalty, time_limit, solver_time_limit = 20):
         self.LARGETIME = 1000.0
         self.veh_num = veh_num
         self.node_num = node_num
@@ -13,13 +13,13 @@ class OrtoolRoutingSolver:
         self.demand_penalty = demand_penalty
         self.time_penalty = time_penalty
         if time_limit <= 1:
-            self.time_limit = 30000
+            self.time_limit = 300000
         else:
             self.time_limit = int(time_limit)
 
         self.start_node = self.node_num - 2
         self.global_penalty = 1.0
-        self.solver_time_limit = 20
+        self.solver_time_limit = int(solver_time_limit)
 
     def optimize_sub(self, edge_time, node_time, z_sol, human_demand_bool, node_seq, route_list = None, flag_verbose = False):
         '''

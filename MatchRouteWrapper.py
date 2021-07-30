@@ -147,7 +147,7 @@ class MatchRouteWrapper:
         y_sol:              bool array of (veh_num, node_num-2), y_sol[k, i] means whether a vehicle visits node i
         '''
         # Initialize an routing plan
-        routing_solver = OrtoolRoutingSolver(self.veh_num, self.node_num, self.human_num, self.demand_penalty, self.time_penalty, self.time_limit)
+        routing_solver = OrtoolRoutingSolver(self.veh_num, self.node_num, self.human_num, self.demand_penalty, self.time_penalty, self.time_limit, self.solver_time_limit)
         self.flag_initialize = flag_initialize
         if flag_initialize == 0:
             routing_solver.set_model(edge_time, node_time)
@@ -193,7 +193,7 @@ class MatchRouteWrapper:
         sum_obj_list = np.empty(2*max_iter, dtype=np.float64)
         demand_obj_list = np.empty(2*max_iter, dtype=np.float64)
         result_max_time_list = np.empty(2*max_iter, dtype=np.float64)
-        routing_solver = OrtoolRoutingSolver(self.veh_num, self.node_num, self.human_num, self.demand_penalty, self.time_penalty, self.time_limit)
+        routing_solver = OrtoolRoutingSolver(self.veh_num, self.node_num, self.human_num, self.demand_penalty, self.time_penalty, self.time_limit, self.solver_time_limit)
         human_matcher = OrtoolHumanMatcher(self.human_num, self.veh_num, self.max_human_in_team)
 
         z_sol = None
