@@ -19,6 +19,7 @@ class OrtoolRoutingSolver:
 
         self.start_node = self.node_num - 2
         self.global_penalty = 1.0
+        self.solver_time_limit = 20
 
     def optimize_sub(self, edge_time, node_time, z_sol, human_demand_bool, node_seq, route_list = None, flag_verbose = False):
         '''
@@ -88,6 +89,7 @@ class OrtoolRoutingSolver:
 
             # Solve the problem.
             search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+            search_parameters.time_limit.seconds = self.solver_time_limit
             if (route_list is not None) and len(route_list[k]) > 2:
                 initial_solution = self.sub_solver[k].ReadAssignmentFromRoutes([route_list[k][1:-1]], True)
                 a_sub_solution = self.sub_solver[k].SolveFromAssignmentWithParameters(initial_solution, search_parameters)
@@ -137,15 +139,15 @@ class OrtoolRoutingSolver:
         self.solver.AddDimension(
             transit_callback_index,
             0,  # no slack
-            self.time_limit,  # vehicle maximum travel distance
+            300000,  # vehicle maximum travel distance
             True,  # start cumul to zero
             dimension_name)
         distance_dimension = self.solver.GetDimensionOrDie(dimension_name)
         temp_penalty = int(self.global_penalty * self.time_penalty)
         distance_dimension.SetGlobalSpanCostCoefficient(temp_penalty)
         
-        if node_seq is not None:
-            self.add_seq_constraint(self.solver, self.manager, node_seq)
+        # if node_seq is not None:
+        #     self.add_seq_constraint(self.solver, self.manager, node_seq)
 
     def add_seq_constraint(self, solver, manager, node_seq):
         distance_dimension = solver.GetDimensionOrDie('Time')
@@ -172,6 +174,7 @@ class OrtoolRoutingSolver:
     def optimize(self):
         # Setting first solution heuristic.
         search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+        search_parameters.time_limit.seconds = self.solver_time_limit
         search_parameters.first_solution_strategy = (routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
         # Solve the problem.
         start_time = time.time()

@@ -41,10 +41,29 @@ class GurobiRoutingSolver:
         result_dict['Runtime'] = self.solver.getAttr('Runtime')
         result_dict['IterCount'] = self.solver.getAttr('IterCount')
         result_dict['NodeCount'] = self.solver.getAttr('NodeCount')
+
+        result_dict['ObjVal'] = self.solver.getAttr('ObjVal') # Objective value for current solution
+        result_dict['ObjBound'] = self.solver.getAttr('ObjBound') # Best available objective bound (lower bound for minimization, upper bound for maximization)
+        # result_dict['ObjBoundC'] = self.solver.getAttr('ObjBoundC') # Best available objective bound, without rounding (lower bound for minimization, upper bound for maximization)
+        # result_dict['PoolObjBound'] = self.solver.getAttr('PoolObjBound') # Bound on best objective for solutions not in pool (lower bound for minimization, upper bound for maximization)
+        result_dict['MIPGap'] = self.solver.getAttr('MIPGap') # Indicates whether the model is a MIP
+        # result_dict['IsMIP'] = self.solver.getAttr('IsMIP') # Indicates whether the model is a MIP
+        # result_dict['IsQP'] = self.solver.getAttr('IsQP') # Indicates whether the model is a QP/MIQP
+        # result_dict['IsQCP'] = self.solver.getAttr('IsQCP') # Indicates whether the model is a QCP/MIQCP
+
         print('Optimization status: %d' % result_dict['Status'])
         print('Problem solved in %f seconds' % result_dict['Runtime'])
         print('Problem solved in %d iterations' % result_dict['IterCount'])
         print('Problem solved in %d branch-and-bound nodes' % result_dict['NodeCount'])
+
+        print('ObjVal', result_dict['ObjVal']) # Objective value for current solution
+        print('ObjBound', result_dict['ObjBound']) # Best available objective bound (lower bound for minimization, upper bound for maximization)
+        # print('ObjBoundC', result_dict['ObjBoundC']) # Best available objective bound, without rounding (lower bound for minimization, upper bound for maximization)
+        # print('PoolObjBound', result_dict['PoolObjBound']) # Bound on best objective for solutions not in pool (lower bound for minimization, upper bound for maximization)
+        print('MIPGap', result_dict['MIPGap']) # Indicates whether the model is a MIP
+        # print('IsMIP', result_dict['IsMIP']) # Indicates whether the model is a MIP
+        # print('IsQP', result_dict['IsQP']) # Indicates whether the model is a QP/MIQP
+        # print('IsQCP', result_dict['IsQCP']) # Indicates whether the model is a QCP/MIQCP
         flag_success = (result_dict['Status'] == 2) or (result_dict['Status'] >= 7) # https://www.gurobi.com/documentation/9.1/refman/optimization_status_codes.html
         return flag_success, result_dict
 

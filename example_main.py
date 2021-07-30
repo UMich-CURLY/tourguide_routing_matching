@@ -66,8 +66,8 @@ human_demand_bool, human_demand_int_unique = global_planner.initialize_human_dem
 print('human_demand_int_unique = \n', human_demand_int_unique)
 
 # Do optimization
-flag_success, route_list, route_time_list, team_list, human_in_team, y_sol, z_sol, sum_obj_list, demand_obj_list, result_max_time_list = global_planner.plan(edge_time, node_time, edge_time_std, node_time_std, human_demand_bool, node_seq, max_iter, flag_initialize, flag_solver)
-print('sum_obj = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (demand_penalty, demand_obj_list[-1], time_penalty, result_max_time_list[-1], sum_obj_list[-1]))
+flag_success, route_list, route_time_list, team_list, human_in_team, y_sol, z_sol, result_dict = global_planner.plan(edge_time, node_time, edge_time_std, node_time_std, human_demand_bool, node_seq, max_iter, flag_initialize, flag_solver)
+print('sum_obj = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (demand_penalty, result_dict['demand_obj'], time_penalty, result_dict['result_max_time'], result_dict['sum_obj']))
 
 # Print and visualize some results
 human_counts = global_planner.evaluator.count_human(human_in_team, veh_num)
@@ -77,6 +77,10 @@ print('total_demand = ', human_demand_bool.sum())
 
 visualizer.print_results(route_list, route_time_list, team_list)
 if flag_show_plot:
+    sum_obj_list = result_dict['sum_obj_list']
+    demand_obj_list = result_dict['demand_obj_list']
+    result_max_time_list = result_dict['result_max_time_list']
+
     visualizer.visualize_routes(node_pose, route_list)
     visualizer.save_plots(folder_name)
     # visualizer.show_plots()
