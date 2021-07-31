@@ -1,4 +1,12 @@
 import numpy as np
+from numpy.random import beta
+from scipy.stats import norm
+
+def norm_VaR(mu, sigma, beta):
+    return mu + sigma * norm.ppf(beta)
+
+def norm_CVaR(mu, sigma, beta):
+    return mu + sigma / (1.0 - beta) * norm.pdf(norm.ppf(beta))
 
 class ResultEvaluator:
     def __init__(self, veh_num, node_num, human_num, demand_penalty, time_penalty):
@@ -8,12 +16,17 @@ class ResultEvaluator:
         self.demand_penalty = demand_penalty
         self.time_penalty = time_penalty
     
-    def objective_fcn(self, edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool):
+    def objective_fcn(self, edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool, flag_dict = False, beta_input = None, edge_time_std = None, node_time_std = None):
         '''
         z_sol:             (human_num, veh_num)
         y_sol:             (veh_num, place_num)
         human_demand_bool: (human_num, place_num), i.e. (human_num, node_num - 2)
         '''
+        if edge_time_std is None or node_time_std is None:
+            beta = None
+        else:
+            beta = beta_input
+
         if (z_sol is None) or (y_sol is None) or (human_demand_bool is None):
             demand_obj = 0.0
         else:
@@ -26,24 +39,36 @@ class ResultEvaluator:
             # for k in range(self.veh_num):
             #     print(k, np.nonzero(penalty_mat[k]))
 
-        result_sum_time = 0.0
-        result_max_time = 0.0
         node_visit = np.zeros(self.node_num, dtype=int)
+        result_time_list = np.zeros(self.veh_num, dtype=np.float64)
+        result_time_cvar = np.zeros(self.veh_num, dtype=np.float64)
         for k in range(self.veh_num):
             if len(route_list) <= 2:
                 continue
             route_time = 0.0
+            route_var = 0.0
             for i in range(len(route_list[k]) - 1):
                 node_i = route_list[k][i]
                 node_j = route_list[k][i+1]
                 route_time += edge_time[k,node_i,node_j] + node_time[k,node_i]
                 node_visit[node_i] += 1
-            result_sum_time += route_time
-            if route_time > result_max_time:
-                result_max_time = route_time
-        # sum_obj = self.demand_penalty * demand_obj + self.time_penalty * result_max_time
+                if beta is not None:
+                    route_var += edge_time_std[k,node_i,node_j]**2 + node_time_std[k,node_i]**2
+            result_time_list[k] = route_time
+            if beta is not None:
+                result_time_cvar[k] = norm_CVaR(route_time, np.sqrt(route_var), beta)
+        result_sum_time = result_time_list.sum()
         sum_obj = self.demand_penalty * demand_obj + self.time_penalty * result_sum_time
-        return sum_obj, demand_obj, result_max_time,  node_visit
+        obj_dict = {}
+        obj_dict['result_time_list'] = result_time_list
+        obj_dict['result_max_time'] = result_time_list.max()
+        obj_dict['result_sum_time'] = result_sum_time
+        obj_dict['result_time_cvar'] = result_time_cvar
+        obj_dict['result_max_time_cvar'] = result_time_cvar.max()
+        obj_dict['result_sum_time_cvar'] = result_time_cvar.sum()
+        if flag_dict:
+            return sum_obj, demand_obj, result_sum_time, node_visit, obj_dict
+        return sum_obj, demand_obj, result_sum_time,  node_visit
 
     def count_human(self, human_in_team, veh_num):
         veh_values_temp, human_counts_temp = np.unique(human_in_team, return_counts=True)

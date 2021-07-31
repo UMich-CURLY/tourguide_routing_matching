@@ -92,13 +92,14 @@ class MatchRouteWrapper:
         demand_obj_list:    float array of (max_iter, ), each element is the number of dropped demand at that iteration
         result_max_time_list: float array of (max_iter, ), each element is the time usage of the whole guidance mission at that iteration
         '''
+        flag_dict = True
         result_dict = {}
         start_time = time.time()
         if flag_solver == 1:
             # Heuristic solver using Ortool
             route_list, route_time_list, team_list, y_sol = self.initialize_plan(edge_time, node_time, flag_initialize)
             flag_success, route_list, route_time_list, team_list, human_in_team, y_sol, z_sol, sum_obj_list, demand_obj_list, result_max_time_list = self.generate_plan(edge_time, node_time, human_demand_bool, route_list, y_sol, node_seq, max_iter)
-            sum_obj, demand_obj, result_max_time, node_visit = self.evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
+            sum_obj, demand_obj, result_sum_time, node_visit, obj_dict = self.evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool, flag_dict, self.beta, edge_time_std, node_time_std)
         else:
             # Exact solver using GUROBI
             routing_solver = GurobiRoutingSolver(self.veh_num, self.node_num, self.human_num, self.demand_penalty, self.time_penalty, self.time_limit, self.solver_time_limit, self.beta)
@@ -106,25 +107,45 @@ class MatchRouteWrapper:
             routing_solver.set_bilinear_model(edge_time, node_time, edge_time_std, node_time_std, human_demand_bool, self.max_human_in_team, node_seq)
             flag_success, temp_result_dict = routing_solver.optimize()
             route_list, route_time_list, team_list, y_sol, human_in_team, z_sol = routing_solver.get_plan(True)
-            sum_obj, demand_obj, result_max_time, node_visit = self.evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool)
+            sum_obj, demand_obj, result_sum_time, node_visit, obj_dict = self.evaluator.objective_fcn(edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool, flag_dict, self.beta, edge_time_std, node_time_std)
             # Construct results
             sum_obj_list = np.ones(2*max_iter, dtype=np.float64) * sum_obj
             demand_obj_list = np.ones(2*max_iter, dtype=np.float64) * demand_obj
-            result_max_time_list = np.ones(2*max_iter, dtype=np.float64) * result_max_time
+            result_max_time_list = np.ones(2*max_iter, dtype=np.float64) * result_sum_time
             result_dict['lower_bound'] = temp_result_dict['ObjBound']
-            result_dict['optimality_gap'] = (sum_obj - result_dict['lower_bound']) / sum_obj
+            result_dict['lin_obj'] = temp_result_dict['ObjVal']
+            result_dict['optimality_gap'] = (sum_obj - result_dict['lower_bound']) / result_dict['lower_bound']
+            result_dict['optimality_gap_wrong'] = (sum_obj - result_dict['lower_bound']) / sum_obj
+            if edge_time_std is not None:
+                result_dict['lin_cvar'] = (temp_result_dict['ObjVal'] - self.demand_penalty * demand_obj) / self.time_penalty
+            else:
+                result_dict['lin_cvar'] = 0.0
         end_time = time.time()
         optimization_time = end_time - start_time
         # Construct result dictionary
         result_dict['optimization_time'] = optimization_time
         result_dict['sum_obj'] = sum_obj
         result_dict['demand_obj'] = demand_obj
-        result_dict['result_max_time'] = result_max_time
+
         result_dict['sum_obj_list'] = sum_obj_list
         result_dict['demand_obj_list'] = demand_obj_list
         result_dict['result_max_time_list'] = result_max_time_list
         result_dict['total_demand'] = human_demand_bool.sum()
         result_dict['dropped_demand_rate'] = demand_obj / result_dict['total_demand']
+
+        result_dict['optimization_time'] = optimization_time
+
+        result_dict['result_time_list'] = obj_dict['result_time_list']
+        result_dict['result_max_time'] = obj_dict['result_max_time']
+        result_dict['result_sum_time'] = obj_dict['result_sum_time']
+        result_dict['result_time_cvar'] = obj_dict['result_time_cvar']
+        result_dict['result_max_time_cvar'] = obj_dict['result_max_time_cvar']
+        result_dict['result_sum_time_cvar'] = obj_dict['result_sum_time_cvar']
+
+        print('\n')
+        for key, value in result_dict.items():
+            print(key, ':', value)
+        print('\n')
         print('optimization_time = ', optimization_time)
         return flag_success, route_list, route_time_list, team_list, human_in_team, y_sol, z_sol, result_dict
 

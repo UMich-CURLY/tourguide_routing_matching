@@ -67,7 +67,7 @@ print('human_demand_int_unique = \n', human_demand_int_unique)
 
 # Do optimization
 flag_success, route_list, route_time_list, team_list, human_in_team, y_sol, z_sol, result_dict = global_planner.plan(edge_time, node_time, edge_time_std, node_time_std, human_demand_bool, node_seq, max_iter, flag_initialize, flag_solver)
-print('sum_obj = demand_penalty * demand_obj + time_penalty * max_time = %f * %f + %f * %f = %f' % (demand_penalty, result_dict['demand_obj'], time_penalty, result_dict['result_max_time'], result_dict['sum_obj']))
+print('sum_obj = demand_penalty * demand_obj + time_penalty * sum_time = %f * %f + %f * %f = %f' % (demand_penalty, result_dict['demand_obj'], time_penalty, result_dict['result_sum_time'], result_dict['sum_obj']))
 
 # Print and visualize some results
 human_counts = global_planner.evaluator.count_human(human_in_team, veh_num)
