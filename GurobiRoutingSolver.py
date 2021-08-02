@@ -135,6 +135,8 @@ class GurobiRoutingSolver:
                 constr += self.z_var[l, k]
             constr_name = 'max_human[' + str(l) + ',' + str(k) + ']'
             self.solver.addConstr(constr <= max_human_in_team[k], constr_name)
+            constr_name = 'min_human[' + str(l) + ',' + str(k) + ']'
+            self.solver.addConstr(constr >= 1.0, constr_name)
         # Time limit constraints
         if self.flag_time_lifting:
             for k in range(self.veh_num):
