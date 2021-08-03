@@ -24,6 +24,9 @@ class ResultEvaluator:
         '''
         if edge_time_std is None or node_time_std is None:
             beta = None
+            # beta = 0.8
+            # edge_time_std = edge_time * 0.3
+            # node_time_std = node_time * 0.3
         else:
             beta = beta_input
 
@@ -43,7 +46,7 @@ class ResultEvaluator:
         result_time_list = np.zeros(self.veh_num, dtype=np.float64)
         result_time_cvar = np.zeros(self.veh_num, dtype=np.float64)
         for k in range(self.veh_num):
-            if len(route_list) <= 2:
+            if len(route_list[k]) <= 2:
                 continue
             route_time = 0.0
             route_var = 0.0
@@ -57,6 +60,7 @@ class ResultEvaluator:
             result_time_list[k] = route_time
             if beta is not None:
                 result_time_cvar[k] = norm_CVaR(route_time, np.sqrt(route_var), beta)
+                # result_time_cvar[k] = norm.cdf((500 - route_time) / np.sqrt(route_var))
         result_sum_time = result_time_list.sum()
         sum_obj = self.demand_penalty * demand_obj + self.time_penalty * result_sum_time
         obj_dict = {}
