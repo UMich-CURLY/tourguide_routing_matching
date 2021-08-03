@@ -33,6 +33,8 @@ class GurobiRoutingSolver:
         self.flag_time_lifting = True
         self.sample_num = 100
         self.beta = beta
+        self.flag_alpha_var = False
+        self.alpha_var_set = time_limit - 50
 
     def optimize(self):
         self.solver.optimize()
@@ -74,7 +76,10 @@ class GurobiRoutingSolver:
         if flag_uncertainty:
             assert edge_time.shape == edge_time_std.shape, 'edge_time.shape == edge_time_std.shape not satisfied'
             assert node_time.shape == node_time_std.shape, 'node_time.shape == node_time_std.shape not satisfied'
-            self.alpha_var = self.solver.addVars(self.veh_num, vtype=GRB.CONTINUOUS, name='alpha', lb=0.0, ub=self.LARGETIME)
+            if self.flag_alpha_var:
+                self.alpha_var = self.solver.addVars(self.veh_num, vtype=GRB.CONTINUOUS, name='alpha', lb=0.0, ub=self.LARGETIME)
+            else:
+                self.alpha_var = np.ones(self.veh_num, dtype=np.float64) *  self.alpha_var_set
             self.w_var = self.solver.addVars(self.veh_num, self.sample_num, vtype=GRB.CONTINUOUS, name='w', lb=0.0, ub=self.LARGETIME)
             temp_coeff = 1.0 / (self.sample_num * (1 - self.beta))
             for k in range(self.veh_num):
@@ -136,7 +141,7 @@ class GurobiRoutingSolver:
             constr_name = 'max_human[' + str(l) + ',' + str(k) + ']'
             self.solver.addConstr(constr <= max_human_in_team[k], constr_name)
             constr_name = 'min_human[' + str(l) + ',' + str(k) + ']'
-            self.solver.addConstr(constr >= 1.0, constr_name)
+            self.solver.addConstr(constr >= 1, constr_name)
         # Time limit constraints
         if self.flag_time_lifting:
             for k in range(self.veh_num):
@@ -310,7 +315,7 @@ class GurobiRoutingSolver:
                 if self.z_var[l, k].x > 0.5:
                     z_sol[l, k] = 1.0
                     human_in_team[l] = k
-        if self.alpha_var is not None:
+        if self.alpha_var is not None and self.flag_alpha_var:
             alpha_sol = np.zeros(self.veh_num, dtype=np.float64)
             for k in range(self.veh_num):
                 alpha_sol[k] = self.alpha_var[k].x
