@@ -27,9 +27,9 @@ class ResultVisualizer:
     def show_plots(self):
         plt.show()
     
-    def save_plots(self, folder_name):
+    def save_plots(self, folder_name, format = 'png'):
         for i_plot in range(len(self.plots)):
-            fig_file = folder_name + 'graph' + str(i_plot) + '.png'
+            fig_file = folder_name + 'graph' + str(i_plot) + '.' + format
             self.plots[i_plot].savefig(fig_file, bbox_inches='tight')
 
     def visualize_routes(self, node_pose, route_list):
