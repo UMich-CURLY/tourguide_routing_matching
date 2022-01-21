@@ -6,23 +6,25 @@ import time
 
 class OrtoolRoutingSolver:
     def __init__(self, veh_num, node_num, human_num, demand_penalty, time_penalty, time_limit, solver_time_limit = 20):
-        self.LARGETIME = 1000.0
-        self.veh_num = veh_num
-        self.node_num = node_num
-        self.human_num = human_num
-        self.demand_penalty = demand_penalty
-        self.time_penalty = time_penalty
-        if time_limit <= 1:
+        self.LARGETIME = 1000.0                 # A large number that should be larger than any possible time appeared in the optimization problem
+        self.veh_num = veh_num                  # The number of agents (robots/vehicles/guides)
+        self.node_num = node_num                # The number of nodes
+        self.human_num = human_num              # The number of human
+        self.demand_penalty = demand_penalty    # The penalty on dropping a POI
+        self.time_penalty = time_penalty        # The penalty on the total time consumption of the tour
+        if time_limit <= 1:                     # The time limit of the tours, integer valued
             self.time_limit = 300000
         else:
             self.time_limit = int(time_limit)
 
-        self.start_node = self.node_num - 2
-        self.global_penalty = 1.0
-        self.solver_time_limit = int(solver_time_limit)
+        self.start_node = self.node_num - 2     # Keep it, the start node is assumed to be No. node_num-2
+        self.global_penalty = 1.0               # Keep this constant
+        self.solver_time_limit = int(solver_time_limit)     # Time limit for the solver
 
     def optimize_sub(self, edge_time, node_time, z_sol, human_demand_bool, node_seq, route_list = None, flag_verbose = False):
         '''
+        Optimize the routing problem
+        ------------------------------------------------------
         z_sol:             (human_num, veh_num)
         human_demand_bool: (human_num, place_num), i.e. (human_num, node_num - 2)
         '''
@@ -74,7 +76,7 @@ class OrtoolRoutingSolver:
                 self.time_limit,  # vehicle maximum travel distance
                 True,  # start cumul to zero
                 dimension_name)
-            distance_dimension = self.sub_solver[k].GetDimensionOrDie(dimension_name)
+            # distance_dimension = self.sub_solver[k].GetDimensionOrDie(dimension_name)
             # temp_penalty = int(self.global_penalty * self.time_penalty)
             # distance_dimension.SetGlobalSpanCostCoefficient(temp_penalty)
 
@@ -84,6 +86,7 @@ class OrtoolRoutingSolver:
                 temp_penalty = int(penalty_mat[k, i] * self.demand_penalty * self.global_penalty)
                 self.sub_solver[k].AddDisjunction([self.sub_manager[k].NodeToIndex(i)], temp_penalty)
 
+            # Add sequence constraints, see the references in README.md
             if node_seq is not None:
                 self.add_seq_constraint(self.sub_solver[k], self.sub_manager[k], node_seq)
 
@@ -97,6 +100,7 @@ class OrtoolRoutingSolver:
                 search_parameters.first_solution_strategy = (routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
                 a_sub_solution = self.sub_solver[k].SolveWithParameters(search_parameters)
 
+            # Construct the result dictionary
             result_dict['Status'].append(self.sub_solver[k].status())
             if self.sub_solver[k].status() != 1:
                 result_dict['Optimized'] = False
@@ -145,9 +149,6 @@ class OrtoolRoutingSolver:
         distance_dimension = self.solver.GetDimensionOrDie(dimension_name)
         temp_penalty = int(self.global_penalty * self.time_penalty)
         distance_dimension.SetGlobalSpanCostCoefficient(temp_penalty)
-        
-        # if node_seq is not None:
-        #     self.add_seq_constraint(self.solver, self.manager, node_seq)
 
     def add_seq_constraint(self, solver, manager, node_seq):
         distance_dimension = solver.GetDimensionOrDie('Time')
@@ -170,30 +171,33 @@ class OrtoolRoutingSolver:
                 constraintActive = solver.ActiveVar(nodeid_i) * solver.ActiveVar(nodeid_j)
                 solver.solver().Add(constraintActive * (solver.VehicleVar(nodeid_i) - solver.VehicleVar(nodeid_j)) == 0 )
 
-
-    def optimize(self):
+    def optimize(self, flag_verbose = False):
         # Setting first solution heuristic.
         search_parameters = pywrapcp.DefaultRoutingSearchParameters()
         search_parameters.time_limit.seconds = self.solver_time_limit
         search_parameters.first_solution_strategy = (routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+
         # Solve the problem.
         start_time = time.time()
         self.solution = self.solver.SolveWithParameters(search_parameters)
         end_time = time.time()
 
+        # Construct the result dictionary
         result_dict = {}
         result_dict['Optimized'] = self.solver.status() == 1
         result_dict['Status'] = self.solver.status()
         result_dict['Runtime'] = end_time - start_time
         # result_dict['IterCount'] = self.solver.iterations()
         # result_dict['NodeCount'] = self.solver.nodes()
-        print('Solution found: %d' % result_dict['Optimized'])
-        print('Optimization status: %d' % result_dict['Status'])
-        print('Problem solved in %f seconds' % result_dict['Runtime'])
-        # print('Problem solved in %d iterations' % result_dict['IterCount'])
-        # print('Problem solved in %d branch-and-bound nodes' % result_dict['NodeCount'])
-        return result_dict
 
+        # Print the results
+        if flag_verbose:
+            print('Solution found: %d' % result_dict['Optimized'])
+            print('Optimization status: %d' % result_dict['Status'])
+            print('Problem solved in %f seconds' % result_dict['Runtime'])
+            # print('Problem solved in %d iterations' % result_dict['IterCount'])
+            # print('Problem solved in %d branch-and-bound nodes' % result_dict['NodeCount'])
+        return result_dict
 
     def distance_callback(self, from_index, to_index):
         """Returns the distance between the two nodes."""
@@ -209,6 +213,7 @@ class OrtoolRoutingSolver:
         return dist_out
 
     def get_random_plan(self, edge_time, node_time):
+        # Initialize a random routing plan
         place_num = self.node_num-2
         place_perm = np.random.permutation(place_num)
         route_node_list = []
@@ -237,6 +242,7 @@ class OrtoolRoutingSolver:
         return route_node_list, route_time_list, team_list, y_sol
 
     def get_plan(self, flag_sub_solver = False, flag_verbose = False):
+        # Output the plans
         """Prints solution on console."""
         route_node_list = []
         route_time_list = []
@@ -300,5 +306,3 @@ class OrtoolRoutingSolver:
         # print(route_time_list)
         # print(team_list)
         return route_node_list, route_time_list, team_list, y_sol
-
-

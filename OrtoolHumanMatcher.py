@@ -28,6 +28,7 @@ class OrtoolHumanMatcher:
                 i_z = veh_num * i_human + i_veh
                 self.objective.SetCoefficient(self.z_var[i_z], 1)
         # Initialize constraints
+        # Each robot should guide n humans, where n is in [1, max_number]
         for i_veh in range(veh_num):
             temp_str = 'veh[' + str(i_veh) + ']'
             temp_constraint = self.solver.Constraint(1, max_human_in_team[i_veh] + 0.0, temp_str) # Human number in a team
@@ -35,7 +36,7 @@ class OrtoolHumanMatcher:
                 i_z = veh_num * i_human + i_veh
                 temp_constraint.SetCoefficient(self.z_var[i_z], 1)
             self.team_constraint.append(temp_constraint)
-
+        # Each human should be assigned to one robot
         for i_human in range(human_num):
             temp_str = 'human[' + str(i_human) + ']'
             temp_constraint = self.solver.Constraint(1, 1, temp_str)
@@ -74,16 +75,16 @@ class OrtoolHumanMatcher:
                 if temp_z_sol > 0.5:
                     human_in_team[i_human] = i_veh
                     break
-        # human_in_team_raw = scores.argmin(axis=1)
-        # print('human_in_team_raw = ', human_in_team_raw)
-        # print('human_in_team_diff = ', human_in_team - human_in_team_raw)
         best_match_score = scores.min(axis=1)
         curr_match_score = (scores * z_sol).sum(axis=1)
-        # print('best_match_score = ', best_match_score)
-        # print('curr_match_score = ', curr_match_score)
         total_demand = human_demand_bool.sum()
         dropped_demand = curr_match_score.sum()
         min_dropped_demand = best_match_score.sum()
         demand_result = [total_demand, dropped_demand, min_dropped_demand]
-        flag_success = True
+        flag_success = True # Since the problem is not infeasible (it passes the assert), the optimization is completed successfully
+        # human_in_team_raw = scores.argmin(axis=1)
+        # print('human_in_team_raw = ', human_in_team_raw)
+        # print('human_in_team_diff = ', human_in_team - human_in_team_raw)
+        # print('best_match_score = ', best_match_score)
+        # print('curr_match_score = ', curr_match_score)
         return flag_success, human_in_team, z_sol, demand_result

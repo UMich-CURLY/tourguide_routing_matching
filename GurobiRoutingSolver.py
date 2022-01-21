@@ -6,12 +6,12 @@ from gurobipy import GRB
 
 class GurobiRoutingSolver:
     def __init__(self, veh_num, node_num, human_num, demand_penalty, time_penalty, time_limit, solver_time_limit = 20.0, beta = 0.8):
-        self.LARGETIME = 1000.0
-        self.veh_num = veh_num
-        self.node_num = node_num
-        self.human_num = human_num
-        self.demand_penalty = demand_penalty
-        self.time_penalty = time_penalty
+        self.LARGETIME = 1000.0                 # A large number that should be larger than any possible time appeared in the optimization problem
+        self.veh_num = veh_num                  # The number of agents (robots/vehicles/guides)
+        self.node_num = node_num                # The number of nodes
+        self.human_num = human_num              # The number of humans
+        self.demand_penalty = demand_penalty    # The penalty on dropping a POI
+        self.time_penalty = time_penalty        # The penalty on the total time consumption of the tour
         if time_limit <= 1:
             self.time_limit = 300000
         else:
@@ -37,39 +37,42 @@ class GurobiRoutingSolver:
         self.alpha_var_set = time_limit - 50
 
     def optimize(self):
+        # Optimize the problem
         self.solver.optimize()
         result_dict = {}
         result_dict['Status'] = self.solver.getAttr('Status')
         result_dict['Runtime'] = self.solver.getAttr('Runtime')
         result_dict['IterCount'] = self.solver.getAttr('IterCount')
         result_dict['NodeCount'] = self.solver.getAttr('NodeCount')
-
         result_dict['ObjVal'] = self.solver.getAttr('ObjVal') # Objective value for current solution
         result_dict['ObjBound'] = self.solver.getAttr('ObjBound') # Best available objective bound (lower bound for minimization, upper bound for maximization)
+        result_dict['MIPGap'] = self.solver.getAttr('MIPGap') # Indicates whether the model is a MIP
         # result_dict['ObjBoundC'] = self.solver.getAttr('ObjBoundC') # Best available objective bound, without rounding (lower bound for minimization, upper bound for maximization)
         # result_dict['PoolObjBound'] = self.solver.getAttr('PoolObjBound') # Bound on best objective for solutions not in pool (lower bound for minimization, upper bound for maximization)
-        result_dict['MIPGap'] = self.solver.getAttr('MIPGap') # Indicates whether the model is a MIP
         # result_dict['IsMIP'] = self.solver.getAttr('IsMIP') # Indicates whether the model is a MIP
         # result_dict['IsQP'] = self.solver.getAttr('IsQP') # Indicates whether the model is a QP/MIQP
         # result_dict['IsQCP'] = self.solver.getAttr('IsQCP') # Indicates whether the model is a QCP/MIQCP
 
+        # Print the optimization status
         print('Optimization status: %d' % result_dict['Status'])
         print('Problem solved in %f seconds' % result_dict['Runtime'])
         print('Problem solved in %d iterations' % result_dict['IterCount'])
         print('Problem solved in %d branch-and-bound nodes' % result_dict['NodeCount'])
-
         print('ObjVal', result_dict['ObjVal']) # Objective value for current solution
         print('ObjBound', result_dict['ObjBound']) # Best available objective bound (lower bound for minimization, upper bound for maximization)
+        print('MIPGap', result_dict['MIPGap']) # Indicates whether the model is a MIP
         # print('ObjBoundC', result_dict['ObjBoundC']) # Best available objective bound, without rounding (lower bound for minimization, upper bound for maximization)
         # print('PoolObjBound', result_dict['PoolObjBound']) # Bound on best objective for solutions not in pool (lower bound for minimization, upper bound for maximization)
-        print('MIPGap', result_dict['MIPGap']) # Indicates whether the model is a MIP
         # print('IsMIP', result_dict['IsMIP']) # Indicates whether the model is a MIP
         # print('IsQP', result_dict['IsQP']) # Indicates whether the model is a QP/MIQP
         # print('IsQCP', result_dict['IsQCP']) # Indicates whether the model is a QCP/MIQCP
-        flag_success = (result_dict['Status'] == 2) or (result_dict['Status'] >= 7) # https://www.gurobi.com/documentation/9.1/refman/optimization_status_codes.html
+
+        # Check whether the optimization is successful
+        flag_success = (result_dict['Status'] == 2) or (result_dict['Status'] >= 7) # See https://www.gurobi.com/documentation/9.1/refman/optimization_status_codes.html
         return flag_success, result_dict
 
     def set_bilinear_model(self, edge_time, node_time, edge_time_std, node_time_std, human_demand_bool, max_human_in_team, node_seq):
+        # This method set the objective function of the optimization problem
         obj = 0.0
         flag_uncertainty = (edge_time_std is not None) and (node_time_std is not None)
         # Objective function: time part
@@ -111,6 +114,7 @@ class GurobiRoutingSolver:
             self.set_cvar_constraint(edge_time, node_time, edge_time_std, node_time_std)
 
     def set_cvar_constraint(self, edge_time, node_time, edge_time_std, node_time_std):
+        # Constraints related to the uncertain time cost, see the references n the README.md
         for i_sample in range(self.sample_num):
             temp_edge_time = edge_time + np.random.randn(*edge_time.shape) * edge_time_std
             temp_node_time = node_time + np.random.randn(*node_time.shape) * node_time_std
@@ -159,6 +163,7 @@ class GurobiRoutingSolver:
                 self.solver.addConstr(constr <= self.time_limit, constr_name)
 
     def add_seq_constraint(self, node_seq):
+        # Sequence constraints
         for i_seq in range(len(node_seq)):
             for i_node in range(len(node_seq[i_seq]) - 1):
                 node_i = node_seq[i_seq][i_node]
@@ -170,10 +175,12 @@ class GurobiRoutingSolver:
                     self.solver.addConstr(self.time_var[k, node_i] <= self.time_var[k, node_j] + self.LARGETIME * (1 - self.y_var[k, node_j]), constr_name)
 
     def set_objective(self):
+        # This method is currently not used in this repository
         obj = self.time_penalty * self.max_time_var
         self.solver.setObjective(obj, GRB.MINIMIZE)
 
     def set_all_task_complete(self):
+        # Run this function if none of the places of interest can be dropped
         for i in range(self.node_num-2):
             constr = 0
             for k in range(self.veh_num):
@@ -255,10 +262,8 @@ class GurobiRoutingSolver:
                 self.solver.addConstr(self.time_var[k,i] <= self.max_time_var, constr_name)
 
 
-        # Energy constraint
-        # Placeholder
-
     def get_plan(self, flag_bilinear = False):
+        # Output the plans
         time_mat = np.zeros((self.veh_num, self.node_num), dtype=np.float64)
         for k in range(self.veh_num):
             for i in range(self.node_num):
@@ -284,12 +289,6 @@ class GurobiRoutingSolver:
             route_node_list.append(route_node)
             route_time_list.append(route_time)
 
-        # for k in [1]:
-        #     for i in range(self.node_num):
-        #         print(self.x_var[k,i,5].varName, self.x_var[k,i,5].x)
-        #     for i in range(self.node_num):
-        #         print(self.x_var[k,i,2].varName, self.x_var[k,i,2].x)
-
         team_list = []
         for i in range(self.node_num-2):
             team = []
@@ -304,7 +303,6 @@ class GurobiRoutingSolver:
             for k in team_list[i]:
                 y_sol[k,i] = 1.0
 
-        # print('route_time_list = ', route_time_list)
         if not flag_bilinear:
             return route_node_list, route_time_list, team_list, y_sol
         
