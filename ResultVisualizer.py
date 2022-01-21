@@ -35,6 +35,7 @@ class ResultVisualizer:
     def visualize_routes(self, node_pose, route_list):
         veh_num = len(route_list)
         node_num = node_pose.shape[0]
+        # Construct the graph
         graph_list = []
         for k in range(veh_num):
             route_len = len(route_list[k])
@@ -64,6 +65,7 @@ class ResultVisualizer:
                 node_labels[i] = ''
         # fixed_nodes = fixed_positions.keys()
         # pos = nx.spring_layout(G,pos=fixed_positions, fixed = fixed_nodes)
+        # Plot the graph
         flag_graph_initialized = False
         temp_plot = plt.figure()
         ax = temp_plot.add_subplot(111)

@@ -1,5 +1,4 @@
 import numpy as np
-from numpy.random import beta
 from scipy.stats import norm
 
 def norm_VaR(mu, sigma, beta):
@@ -18,6 +17,8 @@ class ResultEvaluator:
     
     def objective_fcn(self, edge_time, node_time, route_list, z_sol, y_sol, human_demand_bool, flag_dict = False, beta_input = None, edge_time_std = None, node_time_std = None):
         '''
+        This function calculate the objective functon value of the whole optimization
+        ------------------------------------------------------
         z_sol:             (human_num, veh_num)
         y_sol:             (veh_num, place_num)
         human_demand_bool: (human_num, place_num), i.e. (human_num, node_num - 2)
@@ -60,6 +61,8 @@ class ResultEvaluator:
             result_time_list[k] = route_time
             if beta is not None:
                 result_time_cvar[k] = norm_CVaR(route_time, np.sqrt(route_var), beta)
+                # TODO: This value is correct only when GurobiRoutingSolver.flag_alpha_var == True
+                # However, since this result_time_cvar[k] is not used in the paper, for now, this problem is not fixed yet
                 # result_time_cvar[k] = norm.cdf((500 - route_time) / np.sqrt(route_var))
         result_sum_time = result_time_list.sum()
         sum_obj = self.demand_penalty * demand_obj + self.time_penalty * result_sum_time
@@ -75,6 +78,16 @@ class ResultEvaluator:
         return sum_obj, demand_obj, result_sum_time,  node_visit
 
     def count_human(self, human_in_team, veh_num):
+        '''
+        This function calculate the number of humans in each human-robot teams
+        ------------------------------------------------------
+        Input:
+        human_in_team:      int list of size (human_num), each elements indicate which vehicle that human follows
+        veh_num:            int, the agent/robot number
+        ------------------------------------------------------
+        Output:
+        human_counts:       int array of size (veh_num,), human_counts[k] stores the number of human in the team of robot k
+        '''
         veh_values_temp, human_counts_temp = np.unique(human_in_team, return_counts=True)
         human_counts = np.zeros(veh_num, dtype=int)
         for i_veh in range(human_counts_temp.shape[0]):
