@@ -10,6 +10,7 @@ pip3 install ortools
 ```
 
 ## Run an example
+Run the following command and find the figures in the `temp` folder.
 ```bash
 mkdir temp
 python3 example_main.py
