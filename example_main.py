@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import helper
 from scipy.spatial.distance import squareform, pdist
 from ResultVisualizer import ResultVisualizer
 from MatchRouteWrapper import MatchRouteWrapper

@@ -1,5 +1,4 @@
 import numpy as np
-from numpy.lib.function_base import place
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 import time
