@@ -5,6 +5,8 @@ The goal is to maximize the satisfied human requests (some places of interest to
 
 Practical constraints like time limits are considered.
 
+<img src="readme/smrp_diagram.png" alt="smrp_diagram" width="40%"/>
+
 ## Install the dependencies
 ```bash
 pip3 install gurobipy
