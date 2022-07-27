@@ -25,7 +25,7 @@ python3 example_main.py
 
 To run the simulation shown below where three robots guides multiple humans in an indoor environment. Refer to the repository https://github.com/UMich-CURLY/habitat_multi_docker.
 
-<img src="http://brg.engin.umich.edu/wp-content/uploads/sites/131/2022/07/tourguide_simulation.gif" alt="tourguide_simulation" width="50%"/>
+<img src="https://brg.engin.umich.edu/wp-content/uploads/sites/131/2022/07/tourguide_simulation.gif" alt="tourguide_simulation" width="50%"/>
 
 
 ## References
