@@ -25,8 +25,9 @@ python3 example_main.py
 
 To run the simulation shown below where three robots guides multiple humans in an indoor environment. Refer to the repository https://github.com/UMich-CURLY/habitat_multi_docker.
 
-<img src="https://brg.engin.umich.edu/wp-content/uploads/sites/131/2022/07/tourguide_simulation.gif" alt="tourguide_simulation" width="50%"/>
+<!-- <img src="https://brg.engin.umich.edu/wp-content/uploads/sites/131/2022/07/tourguide_simulation.gif" alt="tourguide_simulation" width="50%"/> -->
 
+<img src="https://www.w3schools.com/images/w3schools_green.jpg" alt="W3Schools.com">
 
 ## References
 B. Fu, T. Kathuria, D. Rizzo, M. Castanier, X. J. Yang, M. Ghaffari, and K. Barton, “Simultaneous human-robot matching and routing for multi-robot tour guiding under time uncertainty,” Journal of Autonomous Vehicles and Systems, pp. 1–12, 2022. \[[Publisher](https://doi.org/10.1115/1.4053428)\] \[[Video](https://youtu.be/jx1RtK0g6fo)\]
