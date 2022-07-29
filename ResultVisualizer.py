@@ -1,7 +1,6 @@
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
-from numpy.core.fromnumeric import amax, argpartition
 
 class ResultVisualizer:
     def __init__(self):

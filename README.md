@@ -1,5 +1,5 @@
 # Multi-robot tour guide: <br/> a simultaneous matching and routing problem
-This repository **simultaneously** solves a bipartite **matching** and vehicle **routing** **problem** to match human with the correct robot and meanwhile generate the robot tours.
+This repository **simultaneously** solves a bipartite **matching** and vehicle **routing** **problem** to match humans with the correct robot and meanwhile generate the robot tours.
 
 The goal is to maximize the satisfied human requests (some places of interest to visit) with the generated human-robot matching and robot routes under traveling and visiting time uncertainty.
 
@@ -23,7 +23,7 @@ python3 example_main.py
 
 ## Run a simulation
 
-To run the simulation shown below where three robots guides multiple humans in an indoor environment. Refer to the repository https://github.com/UMich-CURLY/habitat_multi_docker.
+To run the simulation shown below where three robots guide multiple humans in an indoor environment. Refer to the repository https://github.com/UMich-CURLY/habitat_multi_docker.
 
 <img src="readme/tourguide_simulation.gif" alt="tourguide_simulation" width="50%"/>
 
