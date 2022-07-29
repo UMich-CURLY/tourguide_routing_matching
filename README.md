@@ -28,4 +28,4 @@ To run the simulation shown below where three robots guide multiple humans in an
 <img src="readme/tourguide_simulation.gif" alt="tourguide_simulation" width="50%"/>
 
 ## References
-B. Fu, T. Kathuria, D. Rizzo, M. Castanier, X. J. Yang, M. Ghaffari, and K. Barton, “Simultaneous human-robot matching and routing for multi-robot tour guiding under time uncertainty,” Journal of Autonomous Vehicles and Systems, pp. 1–12, 2022. \[[Publisher](https://doi.org/10.1115/1.4053428)\] \[[Video](https://youtu.be/jx1RtK0g6fo)\]
+B. Fu, T. Kathuria, D. Rizzo, M. Castanier, X. J. Yang, M. Ghaffari, and K. Barton, “Simultaneous human-robot matching and routing for multi-robot tour guiding under time uncertainty,” Journal of Autonomous Vehicles and Systems, pp. 1–12, 2022. \[[Publisher](https://doi.org/10.1115/1.4053428)\] \[[arXiv](https://arxiv.org/abs/2201.10635)\] \[[Video](https://youtu.be/jx1RtK0g6fo)\]
